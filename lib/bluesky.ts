@@ -68,18 +68,23 @@ export async function refreshSession(params: {
   }
 
   const agent = createAgent(params.service);
-  const session = await agent.resumeSession({
+  await agent.resumeSession({
     accessJwt: "",
     refreshJwt: params.refreshJwt,
     handle,
     did,
+    active: true,
   });
 
+  if (!agent.session) {
+    throw new Error("Failed to resume session");
+  }
+
   return {
-    handle: session.data.handle,
-    did: session.data.did,
-    accessJwt: session.data.accessJwt,
-    refreshJwt: session.data.refreshJwt,
+    handle: agent.session.handle,
+    did: agent.session.did,
+    accessJwt: agent.session.accessJwt,
+    refreshJwt: agent.session.refreshJwt,
   };
 }
 
