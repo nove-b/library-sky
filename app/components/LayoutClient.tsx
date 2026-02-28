@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import SiteHeader from "./SiteHeader";
 import type { BlueskySession } from "@/lib/types";
 
@@ -11,83 +11,50 @@ interface LayoutClientProps {
 type ThemeMode = "light" | "dark";
 const THEME_STORAGE_KEY = "library-sky-theme";
 
+function getSessionSnapshot(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("library-sky-session");
+}
+
+function getServerSessionSnapshot(): string | null {
+  return null;
+}
+
+function subscribeToSession(callback: () => void) {
+  window.addEventListener("library-sky-session-change", callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener("library-sky-session-change", callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function parseSession(sessionString: string | null): BlueskySession | null {
+  if (!sessionString) return null;
+  try {
+    return JSON.parse(sessionString) as BlueskySession;
+  } catch {
+    return null;
+  }
+}
+
 export default function LayoutClient({ children }: LayoutClientProps) {
-  const [session, setSession] = useState<BlueskySession | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [theme, setTheme] = useState<ThemeMode>("light");
+  const sessionString = useSyncExternalStore(subscribeToSession, getSessionSnapshot, getServerSessionSnapshot);
+  const session = parseSession(sessionString);
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return "light";
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return storedTheme === "dark" || (!storedTheme && prefersDark) ? "dark" : "light";
+  });
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    const initialTheme: ThemeMode =
-      storedTheme === "dark" ||
-        (!storedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)
-        ? "dark"
-        : "light";
-
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle("dark", initialTheme === "dark");
-
-    const loadSession = () => {
-      const stored = localStorage.getItem("library-sky-session");
-      if (stored) {
-        try {
-          const parsedSession = JSON.parse(stored) as BlueskySession;
-          setSession(parsedSession);
-        } catch {
-          localStorage.removeItem("library-sky-session");
-          setSession(null);
-        }
-      } else {
-        setSession(null);
-      }
-      setIsLoading(false);
-    };
-
-    loadSession();
-
-    // Listen for custom session change events
-    const handleSessionChange = () => {
-      const stored = localStorage.getItem("library-sky-session");
-      if (stored) {
-        try {
-          const parsedSession = JSON.parse(stored) as BlueskySession;
-          setSession(parsedSession);
-        } catch {
-          setSession(null);
-        }
-      } else {
-        setSession(null);
-      }
-    };
-
-    window.addEventListener("library-sky-session-change", handleSessionChange);
-
-    // Listen for storage changes from other tabs
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "library-sky-session") {
-        if (e.newValue) {
-          try {
-            const parsedSession = JSON.parse(e.newValue) as BlueskySession;
-            setSession(parsedSession);
-          } catch {
-            setSession(null);
-          }
-        } else {
-          setSession(null);
-        }
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("library-sky-session-change", handleSessionChange);
-    };
-  }, []);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const handleLogout = () => {
     localStorage.removeItem("library-sky-session");
-    setSession(null);
+    window.dispatchEvent(new Event("library-sky-session-change"));
   };
 
   const toggleTheme = () => {
@@ -97,9 +64,6 @@ export default function LayoutClient({ children }: LayoutClientProps) {
     document.documentElement.classList.toggle("dark", nextTheme === "dark");
   };
 
-  if (isLoading) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">

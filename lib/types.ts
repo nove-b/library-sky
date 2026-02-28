@@ -3,7 +3,6 @@ export type ReadingStatus = "want" | "reading" | "completed" | "dropped";
 export interface Book {
   title: string;
   author: string;
-  amazonUrl: string;
   imageUrl: string;
   price?: string;
   asin: string;
@@ -14,7 +13,6 @@ export interface BookLog {
   cid: string;
   title: string;
   author: string;
-  amazonUrl: string;
   imageUrl: string;
   status: ReadingStatus;
   rating: number;

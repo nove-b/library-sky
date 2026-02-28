@@ -165,19 +165,6 @@ export default function BookLogDetailPage() {
           </div>
         )}
 
-        {/* Amazon リンク */}
-        {log.amazonUrl && (
-          <div className="flex gap-3">
-            <Link
-              href={log.amazonUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition text-sm font-medium"
-            >
-              Amazonで見る →
-            </Link>
-          </div>
-        )}
       </article>
     </>
   );

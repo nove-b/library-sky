@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAgent } from "@/lib/bluesky";
-import type { BookLog } from "@/lib/types";
+import type { BookLog, ReadingStatus } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,8 +14,16 @@ interface ExtractedBookLog extends BookLog {
   postUri: string;
 }
 
-function parseBookLogFromPost(post: Record<string, any>): ExtractedBookLog | null {
-  const text = post.record?.text || "";
+interface BlueskyPost {
+  uri?: string;
+  cid?: string;
+  record?: Record<string, unknown>;
+  author?: Record<string, unknown>;
+  embed?: Record<string, unknown>;
+}
+
+function parseBookLogFromPost(post: BlueskyPost): ExtractedBookLog | null {
+  const text = typeof post.record?.text === "string" ? post.record.text : "";
 
   // 📚【ステータス】タイトル 形式を検出
   const match = text.match(/📚【(.+?)】(.+?)\n/);
@@ -59,7 +67,9 @@ function parseBookLogFromPost(post: Record<string, any>): ExtractedBookLog | nul
 
   // URI が有効な形式でない場合は、デフォルト値を使用
   if (!uri.startsWith('at://')) {
-    uri = `at://${post.author?.did}/${post.uri}`;
+    const authorDid = typeof (post.author as Record<string, unknown>)?.did === "string" ? (post.author as Record<string, unknown>).did : "unknown";
+    const postUri = typeof post.uri === "string" ? post.uri : "unknown";
+    uri = `at://${authorDid}/${postUri}`;
   }
 
   // レーティングを抽出（⭐ の個数）
@@ -67,33 +77,40 @@ function parseBookLogFromPost(post: Record<string, any>): ExtractedBookLog | nul
   const rating = ratingMatch ? ratingMatch.length : 0;
 
   // Amazon URL が facets に含まれている可能性があるため、text から抽出
-  const amazonMatch = text.match(
-    /https?:\/\/(www\.)?amazon\.[a-z.]+\/.*?(?=\s|$)/
-  );
-  const amazonUrl = amazonMatch ? amazonMatch[0] : "";
-
   // 画像URLを抽出（embedから取得）
   let imageUrl = "";
-  if (post.embed?.images && Array.isArray(post.embed.images) && post.embed.images.length > 0) {
-    const firstImage = post.embed.images[0];
-    if (firstImage?.fullsize || firstImage?.thumb) {
-      imageUrl = firstImage.fullsize || firstImage.thumb || "";
+  const embedRecord = post.embed as Record<string, unknown>;
+  const embedImages = embedRecord?.images;
+  if (Array.isArray(embedImages) && embedImages.length > 0) {
+    const firstImage = embedImages[0] as Record<string, unknown>;
+    const fullsize = firstImage?.fullsize;
+    const thumb = firstImage?.thumb;
+    if (typeof fullsize === "string" || typeof thumb === "string") {
+      imageUrl = (typeof fullsize === "string" ? fullsize : "") || (typeof thumb === "string" ? thumb : "");
       console.log('[DEBUG] imageUrl from embed:', imageUrl);
     }
   }
 
+  const authorDid = typeof (post.author as Record<string, unknown>)?.did === "string" ? (post.author as Record<string, unknown>).did : "unknown";
+  const postUri = typeof post.uri === "string" ? post.uri : "unknown";
+  const postCid = typeof post.cid === "string" ? post.cid : "";
+  const createdAt = typeof post.record?.createdAt === "string" ? post.record.createdAt : new Date().toISOString();
+
+  // Validate status is a valid ReadingStatus
+  const validStatuses: ReadingStatus[] = ["want", "reading", "completed", "dropped"];
+  const finalStatus = validStatuses.includes(status as ReadingStatus) ? (status as ReadingStatus) : ("reading" as const);
+
   return {
-    uri: uri || `at://${post.author?.did}/unknown`,
-    cid: post.cid || "",
+    uri: uri || `at://${authorDid}/${postUri}`,
+    cid: postCid,
     title,
     author,
-    amazonUrl,
     imageUrl,
-    status: status || ("reading" as const),
+    status: finalStatus,
     rating: Math.min(rating, 5),
     comment,
-    createdAt: post.record?.createdAt || new Date().toISOString(),
-    postUri: post.uri,
+    createdAt,
+    postUri,
   };
 }
 
@@ -176,9 +193,6 @@ export async function GET(request: NextRequest) {
 
         if (record && typeof record === 'object') {
           const typedRecord = record as Record<string, unknown>;
-          if (typeof typedRecord.amazonUrl === 'string') {
-            parsed.amazonUrl = typedRecord.amazonUrl;
-          }
           if (typeof typedRecord.imageUrl === 'string' && !parsed.imageUrl) {
             parsed.imageUrl = typedRecord.imageUrl;
             console.log('[DEBUG] imageUrl from record:', typedRecord.imageUrl);
@@ -190,7 +204,7 @@ export async function GET(request: NextRequest) {
             parsed.author = typedRecord.author;
           }
           if (typeof typedRecord.status === 'string') {
-            parsed.status = typedRecord.status as any;
+            parsed.status = typedRecord.status as ReadingStatus;
           }
           if (typeof typedRecord.rating === "number") {
             parsed.rating = typedRecord.rating;

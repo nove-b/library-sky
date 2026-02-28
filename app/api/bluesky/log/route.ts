@@ -19,46 +19,6 @@ const STATUS_LABELS: Record<ReadingStatus, string> = {
   dropped: "中断",
 };
 
-async function buildImageEmbed(
-  agent: ReturnType<typeof createAgent>,
-  imageUrl: string,
-  title: string
-) {
-  if (!imageUrl) {
-    return undefined;
-  }
-
-  try {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Image fetch failed: ${response.status}`);
-    }
-
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.startsWith("image/")) {
-      throw new Error(`Unsupported content-type: ${contentType}`);
-    }
-
-    const imageBuffer = await response.arrayBuffer();
-    const uploaded = await agent.uploadBlob(new Uint8Array(imageBuffer), {
-      encoding: contentType,
-    });
-
-    return {
-      $type: "app.bsky.embed.images",
-      images: [
-        {
-          image: uploaded.data.blob,
-          alt: `${title} の書影`,
-        },
-      ],
-    };
-  } catch (error) {
-    console.warn("[POST] Failed to upload image for embed:", error);
-    return undefined;
-  }
-}
-
 function decodeDidFromJwt(accessJwt: string) {
   const jwtParts = accessJwt.split(".");
   if (jwtParts.length !== 3) {
@@ -184,7 +144,6 @@ export async function POST(request: NextRequest) {
         $type: COLLECTION,
         title: (book as Book).title,
         author: (book as Book).author,
-        amazonUrl: (book as Book).amazonUrl,
         imageUrl: (book as Book).imageUrl,
         status,
         rating,
@@ -213,7 +172,6 @@ export async function POST(request: NextRequest) {
       `✍️ 著者: ${(book as Book).author}`,
       ratingStars ? `${ratingStars} ${rating}/5` : "",
       safeComment ? `💬 感想: ${safeComment}` : "",
-      (book as Book).amazonUrl ? `🛒 ${(book as Book).amazonUrl}` : "",
       `🔗 ${detailUrlWithUri}`,
     ].filter(Boolean);
 

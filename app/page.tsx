@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import HomeClient from "./components/HomeClient";
 import type { BlueskySession } from "@/lib/types";
 
@@ -18,69 +18,51 @@ function isValidSession(session: unknown): session is BlueskySession {
   );
 }
 
-export default function Home() {
-  const [session, setSession] = useState<BlueskySession | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+function getSessionSnapshot(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("library-sky-session");
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem("library-sky-session");
-    if (stored) {
-      try {
-        const parsedSession = JSON.parse(stored);
-        if (isValidSession(parsedSession)) {
-          setSession(parsedSession);
-        } else {
-          localStorage.removeItem("library-sky-session");
-          setSession(null);
-        }
-      } catch {
-        localStorage.removeItem("library-sky-session");
-        setSession(null);
-      }
+function getServerSnapshot(): string | null {
+  return null;
+}
+
+function subscribe(callback: () => void) {
+  window.addEventListener("library-sky-session-change", callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener("library-sky-session-change", callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function parseSession(sessionString: string | null): BlueskySession | null {
+  if (!sessionString) return null;
+  try {
+    const parsedSession = JSON.parse(sessionString);
+    if (isValidSession(parsedSession)) {
+      return parsedSession;
     }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    const handleSessionChangeEvent = () => {
-      const stored = localStorage.getItem("library-sky-session");
-      if (stored) {
-        try {
-          const parsedSession = JSON.parse(stored);
-          if (isValidSession(parsedSession)) {
-            setSession(parsedSession);
-          } else {
-            localStorage.removeItem("library-sky-session");
-            setSession(null);
-          }
-        } catch {
-          localStorage.removeItem("library-sky-session");
-          setSession(null);
-        }
-      } else {
-        setSession(null);
-      }
-    };
-
-    window.addEventListener("library-sky-session-change", handleSessionChangeEvent);
-    return () => {
-      window.removeEventListener("library-sky-session-change", handleSessionChangeEvent);
-    };
-  }, []);
-
-  if (isLoading) {
-    return null;
+    localStorage.removeItem("library-sky-session");
+  } catch {
+    localStorage.removeItem("library-sky-session");
   }
+  return null;
+}
+
+export default function Home() {
+  const sessionString = useSyncExternalStore(subscribe, getSessionSnapshot, getServerSnapshot);
+  const session = parseSession(sessionString);
 
   const handleSessionChange = (newSession: BlueskySession | null) => {
     if (newSession && isValidSession(newSession)) {
-      setSession(newSession);
       localStorage.setItem("library-sky-session", JSON.stringify(newSession));
+      window.dispatchEvent(new Event("library-sky-session-change"));
       return;
     }
 
     localStorage.removeItem("library-sky-session");
-    setSession(null);
+    window.dispatchEvent(new Event("library-sky-session-change"));
   };
 
   return (
