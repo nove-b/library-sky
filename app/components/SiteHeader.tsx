@@ -21,14 +21,6 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
           </div>
         </Link>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
-            aria-label="テーマを切り替える"
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
           {session && (
             <>
               <Link
@@ -44,16 +36,42 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
               </Link>
               <button
                 type="button"
+                onClick={onToggleTheme}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
+                aria-label="テーマを切り替える"
+              >
+                {theme === "dark" ? "☀️" : "🌙"}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   window.dispatchEvent(new Event("library-sky-session-change"));
                   onLogout();
                 }}
-                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
+                aria-label="ログアウト"
+                title="ログアウト"
               >
-                ログアウト
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
               </button>
             </>
           )}
+
+
         </div>
       </div>
     </header>
