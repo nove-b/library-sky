@@ -36,7 +36,7 @@ function parseBookLogFromPost(post: BlueskyPost): ExtractedBookLog | null {
   const authorMatch = text.match(/✍️ 著者: (.+?)(\n|$)/);
   const author = authorMatch ? authorMatch[1] : "Unknown";
 
-  // コメント情報を抽出
+  // コメント情報を抽出（投稿テキストから省略版を初期値として抽出）
   const commentMatch = text.match(/💬 感想: (.+?)(\n|$)/);
   const comment = commentMatch ? commentMatch[1] : "";
 
@@ -44,21 +44,56 @@ function parseBookLogFromPost(post: BlueskyPost): ExtractedBookLog | null {
   const recordUriMatch = text.match(/📌 (at:\/\/.+?)(\n|$)/);
   let uri = recordUriMatch ? recordUriMatch[1].trim() : "";
 
-  // レコードURIが見つからない場合は、🔗 のURLから抽出を試みる
+  // レコードURIが見つからない場合は、facetsまたは🔗のURLから抽出を試みる
   if (!uri) {
-    const urlMatch = text.match(/🔗 (.+?)(\n|$)/);
-    const urlOrBrowserUrl = urlMatch ? urlMatch[1].trim() : "";
+    // facetsからURLを探す
+    const recordFacets = post.record?.facets;
+    if (Array.isArray(recordFacets)) {
+      for (const facet of recordFacets) {
+        const facetObj = facet as Record<string, unknown>;
+        const features = facetObj.features;
+        if (Array.isArray(features)) {
+          for (const feature of features) {
+            const featureObj = feature as Record<string, unknown>;
+            if (featureObj.$type === "app.bsky.richtext.facet#link" && typeof featureObj.uri === "string") {
+              const facetUri = featureObj.uri;
+              if (facetUri.startsWith('http://') || facetUri.startsWith('https://')) {
+                const queryString = facetUri.split('?')[1];
+                if (queryString) {
+                  const uriParam = new URLSearchParams(queryString).get('uri');
+                  if (uriParam) {
+                    try {
+                      uri = decodeURIComponent(uriParam);
+                      break;
+                    } catch {
+                      uri = "";
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if (uri) break;
+        }
+      }
+    }
 
-    if (urlOrBrowserUrl.startsWith('http://') || urlOrBrowserUrl.startsWith('https://')) {
-      // URLクエリパラメータから記録URIを抽出
-      const queryString = urlOrBrowserUrl.split('?')[1];
-      if (queryString) {
-        const uriParam = new URLSearchParams(queryString).get('uri');
-        if (uriParam) {
-          try {
-            uri = decodeURIComponent(uriParam);
-          } catch {
-            uri = "";
+    // facetsで見つからない場合は、🔗からURLを抽出
+    if (!uri) {
+      const urlMatch = text.match(/🔗 (.+?)(\n|$)/);
+      const urlOrBrowserUrl = urlMatch ? urlMatch[1].trim() : "";
+
+      if (urlOrBrowserUrl.startsWith('http://') || urlOrBrowserUrl.startsWith('https://')) {
+        // URLクエリパラメータから記録URIを抽出
+        const queryString = urlOrBrowserUrl.split('?')[1];
+        if (queryString) {
+          const uriParam = new URLSearchParams(queryString).get('uri');
+          if (uriParam) {
+            try {
+              uri = decodeURIComponent(uriParam);
+            } catch {
+              uri = "";
+            }
           }
         }
       }
@@ -188,7 +223,11 @@ export async function GET(request: NextRequest) {
 
         // Debug: レコードの内容を確認
         if (record) {
+          console.log('[DEBUG] Record found for URI:', parsed.uri);
           console.log('[DEBUG] Record found:', JSON.stringify(record, null, 2));
+        } else {
+          console.log('[DEBUG] Record NOT found for URI:', parsed.uri);
+          console.log('[DEBUG] Available recordMap keys:', Array.from(recordMap.keys()).slice(0, 5));
         }
 
         if (record && typeof record === 'object') {

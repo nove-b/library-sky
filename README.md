@@ -1,4 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Library Sky
+
+Blueskyソーシャルメディアプラットフォームでのあなたの投稿を整理・管理するウェブアプリケーションです。
+
+## 概要
+
+**Library Sky** は、Bluesky上の投稿（ログ）を記録し、ユーザーのプロフィール情報やスレッド情報を取得・表示できるプラットフォームです。AT Protocol（Bluesky API）を活用し、セッション管理、投稿管理、プロフィール表示などの機能を提供します。
+
+### 主な機能
+
+- **Blueskyログイン認証**: セキュアなセッション管理によるユーザー認証
+- **投稿管理**: Bluesky上の投稿を記録・表示
+- **プロフィール表示**: ユーザープロフィール情報の取得・表示
+- **スレッド表示**: 投稿スレッド情報の取得
+- **フィード管理**: カスタムフィードの作成・管理
+
+### 技術スタック
+
+- **フレームワーク**: [Next.js](https://nextjs.org) 16.1.6
+- **言語**: TypeScript
+- **UI**: React 19.2.3
+- **スタイリング**: Tailwind CSS 4
+- **API**: [@atproto/api](https://github.com/bluesky-social/atproto) (Bluesky SDK)
+- **HTTP Client**: Axios
 
 ## Getting Started
 

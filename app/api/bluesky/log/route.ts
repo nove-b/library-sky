@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Book, ReadingStatus } from "@/lib/types";
 import {
-  buildFacets,
   createAgent,
   DEFAULT_BSKY_SERVICE,
   refreshSession,
@@ -158,7 +157,10 @@ export async function POST(request: NextRequest) {
     const tid = recordUri.split("/").pop() || "";
 
     const statusLabel = STATUS_LABELS[status as ReadingStatus] ?? String(status);
-    const safeComment = typeof comment === "string" ? comment.trim() : "";
+    let safeComment = typeof comment === "string" ? comment.trim() : "";
+    if (safeComment.length > 100) {
+      safeComment = safeComment.substring(0, 100) + "...";
+    }
     const ratingStars = "⭐".repeat(Math.max(0, Math.min(rating, 5)));
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -172,11 +174,35 @@ export async function POST(request: NextRequest) {
       `✍️ 著者: ${(book as Book).author}`,
       ratingStars ? `${ratingStars} ${rating}/5` : "",
       safeComment ? `💬 感想: ${safeComment}` : "",
-      `🔗 ${detailUrlWithUri}`,
+      `🔗 library-sky`,
     ].filter(Boolean);
 
     const text = lines.join("\n");
-    const facets = await buildFacets(agent, text);
+
+    // facetsを手動で構築してカスタムリンクテキストを作成
+    const linkText = "library-sky";
+    const linkStart = text.indexOf(linkText);
+
+    // バイト位置を計算（UTF-8エンコーディング）
+    const encoder = new TextEncoder();
+    const beforeLink = text.substring(0, linkStart);
+    const beforeLinkBytes = encoder.encode(beforeLink);
+    const linkBytes = encoder.encode(linkText);
+
+    const facets = [
+      {
+        index: {
+          byteStart: beforeLinkBytes.length,
+          byteEnd: beforeLinkBytes.length + linkBytes.length,
+        },
+        features: [
+          {
+            $type: "app.bsky.richtext.facet#link",
+            uri: detailUrlWithUri,
+          },
+        ],
+      },
+    ];
 
     // 既にアップロードされた画像blobを使用して埋め込みを作成
     const imageEmbed = imageBlob
