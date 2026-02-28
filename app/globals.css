@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #fafaf9;
@@ -12,6 +13,18 @@
   --warning: #d97706;
 }
 
+:root.dark {
+  --background: #0c0a09;
+  --foreground: #e7e5e4;
+  --muted: #a8a29e;
+  --panel: #1c1917;
+  --panel-strong: #292524;
+  --border: rgba(255, 255, 255, 0.12);
+  --accent: #3b82f6;
+  --accent-strong: #2563eb;
+  --warning: #f59e0b;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -21,4 +34,10 @@
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
 }

@@ -119,12 +119,12 @@ export default function BlueskySessionPanel({
   return (
     <form
       onSubmit={handleLogin}
-      className="space-y-4 rounded-xl border border-stone-200 bg-white p-5"
+      className="space-y-4 rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-800 dark:bg-stone-900"
     >
 
 
-      <p className="text-sm font-semibold text-stone-900">Blueskyに接続</p>
-      <p className="text-xs text-stone-600">
+      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Blueskyに接続</p>
+      <p className="text-xs text-stone-600 dark:text-stone-400">
         投稿にはアプリパスワードでログインします。
       </p>
 
@@ -133,14 +133,14 @@ export default function BlueskySessionPanel({
           value={handle}
           onChange={(event) => setHandle(event.target.value)}
           placeholder="handle.bsky.social"
-          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500"
+          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
         />
         <input
           type="password"
           value={appPassword}
           onChange={(event) => setAppPassword(event.target.value)}
           placeholder="アプリパスワード"
-          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500"
+          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
@@ -148,7 +148,7 @@ export default function BlueskySessionPanel({
           value={service}
           onChange={(event) => setService(event.target.value)}
           placeholder="https://bsky.social"
-          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500"
+          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
         />
         <button
           type="submit"
@@ -158,7 +158,7 @@ export default function BlueskySessionPanel({
           {isLoading ? "接続中..." : "接続"}
         </button>
       </div>
-      {notice ? <p className="text-xs text-blue-600">{notice}</p> : null}
+      {notice ? <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p> : null}
     </form>
   );
 }

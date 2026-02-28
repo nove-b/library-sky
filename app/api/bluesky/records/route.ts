@@ -72,9 +72,15 @@ function parseBookLogFromPost(post: Record<string, any>): ExtractedBookLog | nul
   );
   const amazonUrl = amazonMatch ? amazonMatch[0] : "";
 
-  // 画像URLを抽出
-  const imageMatch = text.match(/🖼\s*(https?:\/\/\S+)/);
-  const imageUrl = imageMatch ? imageMatch[1] : "";
+  // 画像URLを抽出（embedから取得）
+  let imageUrl = "";
+  if (post.embed?.images && Array.isArray(post.embed.images) && post.embed.images.length > 0) {
+    const firstImage = post.embed.images[0];
+    if (firstImage?.fullsize || firstImage?.thumb) {
+      imageUrl = firstImage.fullsize || firstImage.thumb || "";
+      console.log('[DEBUG] imageUrl from embed:', imageUrl);
+    }
+  }
 
   return {
     uri: uri || `at://${post.author?.did}/unknown`,
@@ -142,7 +148,7 @@ export async function GET(request: NextRequest) {
       limit: 100,
     });
 
-    const posts = (feedResponse.data?.feed || []) as Array<{
+    const posts = (feedResponse.data?.feed || []) as unknown as Array<{
       post: Record<string, unknown>;
     }>;
 
@@ -163,29 +169,38 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        if (record?.amazonUrl) {
-          parsed.amazonUrl = record.amazonUrl;
+        // Debug: レコードの内容を確認
+        if (record) {
+          console.log('[DEBUG] Record found:', JSON.stringify(record, null, 2));
         }
-        if (record?.imageUrl && !parsed.imageUrl) {
-          parsed.imageUrl = record.imageUrl;
-        }
-        if (record?.title) {
-          parsed.title = record.title;
-        }
-        if (record?.author) {
-          parsed.author = record.author;
-        }
-        if (record?.status) {
-          parsed.status = record.status;
-        }
-        if (typeof record?.rating === "number") {
-          parsed.rating = record.rating;
-        }
-        if (typeof record?.comment === "string") {
-          parsed.comment = record.comment;
-        }
-        if (record?.createdAt) {
-          parsed.createdAt = record.createdAt;
+
+        if (record && typeof record === 'object') {
+          const typedRecord = record as Record<string, unknown>;
+          if (typeof typedRecord.amazonUrl === 'string') {
+            parsed.amazonUrl = typedRecord.amazonUrl;
+          }
+          if (typeof typedRecord.imageUrl === 'string' && !parsed.imageUrl) {
+            parsed.imageUrl = typedRecord.imageUrl;
+            console.log('[DEBUG] imageUrl from record:', typedRecord.imageUrl);
+          }
+          if (typeof typedRecord.title === 'string') {
+            parsed.title = typedRecord.title;
+          }
+          if (typeof typedRecord.author === 'string') {
+            parsed.author = typedRecord.author;
+          }
+          if (typeof typedRecord.status === 'string') {
+            parsed.status = typedRecord.status as any;
+          }
+          if (typeof typedRecord.rating === "number") {
+            parsed.rating = typedRecord.rating;
+          }
+          if (typeof typedRecord.comment === "string") {
+            parsed.comment = typedRecord.comment;
+          }
+          if (typeof typedRecord.createdAt === 'string') {
+            parsed.createdAt = typedRecord.createdAt;
+          }
         }
         return parsed;
       })

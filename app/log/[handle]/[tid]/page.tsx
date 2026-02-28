@@ -76,7 +76,7 @@ export default function BookLogDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-gray-500">読み込み中...</div>
+        <div className="text-gray-500 dark:text-stone-400">読み込み中...</div>
       </div>
     );
   }
@@ -86,12 +86,12 @@ export default function BookLogDetailPage() {
       <>
         <Link
           href="/"
-          className="text-blue-600 hover:text-blue-700 mb-6 inline-block font-medium"
+          className="mb-6 inline-block font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
         >
           ← 戻る
         </Link>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+          <p className="text-red-700 dark:text-red-300">
             {error || "ログが見つかりません"}
           </p>
         </div>
@@ -103,18 +103,18 @@ export default function BookLogDetailPage() {
     <>
       <Link
         href={`/user/${handle}`}
-        className="text-blue-600 hover:text-blue-700 mb-6 inline-block font-medium"
+        className="mb-6 inline-block font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
       >
         ← {handle}に戻る
       </Link>
 
-      <article className="border border-stone-200 rounded-lg bg-white p-6 space-y-6">
+      <article className="space-y-6 rounded-lg border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
         {/* ヘッダー */}
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1">
-              <h1 className="text-lg font-semibold text-stone-900">{log.title}</h1>
-              <p className="text-sm text-stone-600">✍️ {log.author}</p>
+              <h1 className="text-lg font-semibold text-stone-900 dark:text-stone-100">{log.title}</h1>
+              <p className="text-sm text-stone-600 dark:text-stone-400">✍️ {log.author}</p>
             </div>
             {log.imageUrl && (
               <div className="shrink-0">
@@ -129,7 +129,7 @@ export default function BookLogDetailPage() {
 
           <div className="flex flex-wrap gap-2">
             <span
-              className={`px-2 py-1 rounded-full border border-stone-300 bg-stone-100 text-stone-700 text-xs font-medium ${log.status === "want"
+              className={`rounded-full border border-stone-300 bg-stone-100 px-2 py-1 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 ${log.status === "want"
                 ? ""
                 : log.status === "reading"
                   ? ""
@@ -143,12 +143,12 @@ export default function BookLogDetailPage() {
             {log.rating > 0 && (
               <div className="flex items-center gap-1 text-xs">
                 <span className="text-amber-600">{"⭐".repeat(log.rating)}</span>
-                <span className="text-stone-500">{log.rating}/5</span>
+                <span className="text-stone-500 dark:text-stone-400">{log.rating}/5</span>
               </div>
             )}
           </div>
 
-          <div className="text-xs text-stone-500">
+          <div className="text-xs text-stone-500 dark:text-stone-400">
             📅 {new Date(log.createdAt).toLocaleDateString("ja-JP", {
               year: "numeric",
               month: "short",
@@ -159,9 +159,9 @@ export default function BookLogDetailPage() {
 
         {/* コメント */}
         {log.comment && (
-          <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-stone-900 mb-2">💬 感想</h2>
-            <p className="text-sm text-stone-700 whitespace-pre-wrap">{log.comment}</p>
+          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
+            <h2 className="mb-2 text-sm font-semibold text-stone-900 dark:text-stone-100">💬 感想</h2>
+            <p className="whitespace-pre-wrap text-sm text-stone-700 dark:text-stone-300">{log.comment}</p>
           </div>
         )}
 

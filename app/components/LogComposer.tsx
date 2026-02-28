@@ -127,35 +127,35 @@ export default function LogComposer({ session }: LogComposerProps) {
   return (
     <section id="compose" className="space-y-5">
       {!session ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
           読書ログを投稿するにはBlueskyにログインしてください。
         </div>
       ) : null}
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-xl border border-stone-200 bg-white p-6"
+        className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900"
       >
-        <p className="text-sm font-semibold text-stone-900">読書ログを投稿</p>
-        <p className="text-xs text-stone-600">
+        <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">読書ログを投稿</p>
+        <p className="text-xs text-stone-600 dark:text-stone-400">
           読んだ本の情報と感想をBlueskyに投稿できます。
         </p>
 
         <div className="mb-3">
 
-          <label className="space-y-2 text-xs font-medium text-stone-900">
+          <label className="space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
             書籍名
             <div className="flex gap-1.5">
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="タイトルを入力"
-                className="w-full rounded-lg border mt-1 border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500"
+                className="mt-1 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
               />
               <button
                 type="button"
                 onClick={handleSearch}
                 disabled={isSearching}
-                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="whitespace-nowrap rounded-lg border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 disabled:cursor-not-allowed dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
               >
                 {isSearching ? "検索中..." : "検索"}
               </button>
@@ -166,7 +166,7 @@ export default function LogComposer({ session }: LogComposerProps) {
         </div>
 
         {searchError ? (
-          <p className="text-xs text-red-600">{searchError}</p>
+          <p className="text-xs text-red-600 dark:text-red-400">{searchError}</p>
         ) : null}
         {searchResults.length > 0 ? (
           <div className="grid gap-3">
@@ -180,7 +180,7 @@ export default function LogComposer({ session }: LogComposerProps) {
                   setAmazonUrl(result.amazonUrl);
                   setImageUrl(result.imageUrl);
                 }}
-                className="flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50"
+                className="flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:border-blue-700 dark:hover:bg-stone-700"
               >
                 <img
                   src={result.imageUrl}
@@ -188,33 +188,33 @@ export default function LogComposer({ session }: LogComposerProps) {
                   className="h-14 w-10 rounded-lg object-cover"
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-stone-900">{result.title}</p>
-                  <p className="text-xs text-stone-600">{result.author}</p>
+                  <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{result.title}</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">{result.author}</p>
                 </div>
-                <span className="text-xs font-medium text-blue-600">選択</span>
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-400">選択</span>
               </button>
             ))}
           </div>
         ) : null}
         <div className="mb-3">
-          <label className="space-y-2 text-xs font-medium text-stone-900">
+          <label className="space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
             Amazon URL
             <input
               value={amazonUrl}
               onChange={(event) => setAmazonUrl(event.target.value)}
               placeholder="https://amazon.co.jp/dp/..."
-              className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 mt-1 outline-none transition placeholder:text-stone-400 focus:border-blue-500"
+              className="mt-1 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
           </label>
         </div>
 
         <div className="mb-3">
-          <label className="space-y-2 text-xs font-medium mb-3 text-stone-900">
+          <label className="mb-3 space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
             ステータス
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value as ReadingStatus)}
-              className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition focus:border-blue-500 mt-1"
+              className="mt-1 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
             >
               {statusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -225,7 +225,7 @@ export default function LogComposer({ session }: LogComposerProps) {
           </label>
         </div>
         <div className="mb-3">
-          <label className="space-y-2 text-xs font-medium text-stone-900">
+          <label className="space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
             評価 ({rating}/5)
             <input
               type="range"
@@ -239,19 +239,19 @@ export default function LogComposer({ session }: LogComposerProps) {
         </div>
 
         <div className="mb-3">
-          <label className="space-y-2 text-xs font-medium text-stone-900">
+          <label className="space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
             コメント
             <textarea
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="感想をひとこと"
               rows={3}
-              className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500"
+              className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
           </label>
         </div>
 
-        {notice ? <p className="text-xs text-blue-600">{notice}</p> : null}
+        {notice ? <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p> : null}
 
         <button
           type="submit"

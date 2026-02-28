@@ -193,7 +193,7 @@ export default function UserBooksPage() {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
         エラー: {error}
       </div>
     );
@@ -207,21 +207,21 @@ export default function UserBooksPage() {
             href={`https://bsky.app/profile/${userDid}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:opacity-80 transition text-blue-600"
+            className="text-blue-600 transition hover:opacity-80 dark:text-blue-400"
           >
             <h1 className="text-xl  mb-2 ">📚 {displayName}</h1>
           </Link>
         ) : (
           <h1 className="text-xl  mb-2 ">📚 {displayName} </h1>
         )}
-        <p className="text-stone-600">
+        <p className="text-stone-600 dark:text-stone-400">
           {books.length} 件の感想を記録しています...
         </p>
       </header>
 
       {books.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-stone-500 mb-2">📭 まだ本を記録していません</p>
+          <p className="mb-2 text-stone-500 dark:text-stone-400">📭 まだ本を記録していません</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -233,7 +233,7 @@ export default function UserBooksPage() {
                 href={`/log/${handle}/${tid}?uri=${encodeURIComponent(book.uri)}`}
               >
                 <article
-                  className="border border-stone-200 rounded-lg p-4 cursor-pointer transition hover:border-blue-300 hover:shadow-md bg-white"
+                  className="cursor-pointer rounded-lg border border-stone-200 bg-white p-4 transition hover:border-blue-300 hover:shadow-md dark:border-stone-800 dark:bg-stone-900 dark:hover:border-blue-700"
                 >
                   <div className="flex gap-4">
                     {/* Book Cover */}
@@ -245,8 +245,8 @@ export default function UserBooksPage() {
                           className="w-16 h-24 rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="w-16 h-24 bg-stone-200 flex items-center justify-center rounded-lg">
-                          <span className="text-xs text-stone-400">No Image</span>
+                        <div className="flex h-24 w-16 items-center justify-center rounded-lg bg-stone-200 dark:bg-stone-700">
+                          <span className="text-xs text-stone-400 dark:text-stone-300">No Image</span>
                         </div>
                       )}
                     </div>
@@ -257,7 +257,7 @@ export default function UserBooksPage() {
                       <div>
                         <div className="flex justify-between items-center">
 
-                          <h2 className="text-sm font-semibold text-stone-900 line-clamp-2">
+                          <h2 className="line-clamp-2 text-sm font-semibold text-stone-900 dark:text-stone-100">
                             {book.title}
                           </h2>
                           <div className="relative">
@@ -268,7 +268,7 @@ export default function UserBooksPage() {
                                 e.stopPropagation();
                                 setOpenMenuId(openMenuId === book.cid ? null : book.cid);
                               }}
-                              className="p-1 text-stone-400 hover:text-stone-600 transition"
+                              className="p-1 text-stone-400 transition hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300"
                               title="メニュー"
                             >
                               <svg
@@ -285,14 +285,14 @@ export default function UserBooksPage() {
 
                             {/* ドロップダウンメニュー */}
                             {openMenuId === book.cid && (
-                              <div className="absolute right-0  bg-white border border-stone-200 rounded-lg shadow-lg z-10">
+                              <div className="absolute right-0 z-10 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900">
                                 <button
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleShareLog(book);
                                   }}
-                                  className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 transition-colors flex items-center gap-2 border-b border-stone-200"
+                                  className="flex w-full items-center gap-2 border-b border-stone-200 px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800"
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -318,7 +318,7 @@ export default function UserBooksPage() {
                                       handleDeleteLog(book);
                                     }}
                                     disabled={deletingId === book.cid}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30"
                                   >
                                     <svg
                                       xmlns="http://www.w3.org/2000/svg"
@@ -341,7 +341,7 @@ export default function UserBooksPage() {
                             )}
                           </div>
                         </div>
-                        <p className="text-xs text-stone-600">
+                        <p className="text-xs text-stone-600 dark:text-stone-400">
                           {book.author}
                         </p>
                       </div>
@@ -350,11 +350,11 @@ export default function UserBooksPage() {
                         {/* Rating */}
                         <div className="flex items-center gap-1">
                           <span className="text-amber-600">{"⭐".repeat(book.rating)}</span>
-                          <span className="text-stone-500">{book.rating}/5</span>
+                          <span className="text-stone-500 dark:text-stone-400">{book.rating}/5</span>
                         </div>
 
                         {/* Status Badge */}
-                        <span className="px-2 py-1 rounded-full border border-stone-300 bg-stone-100 text-stone-700 font-medium">
+                        <span className="rounded-full border border-stone-300 bg-stone-100 px-2 py-1 font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
                           {STATUS_LABELS[book.status] || book.status}
                         </span>
 
@@ -363,7 +363,7 @@ export default function UserBooksPage() {
 
                       {/* Comment */}
                       {book.comment && (
-                        <p className="text-sm text-stone-700 line-clamp-2">
+                        <p className="line-clamp-2 text-sm text-stone-700 dark:text-stone-300">
                           {book.comment}
                         </p>
                       )}
@@ -374,7 +374,7 @@ export default function UserBooksPage() {
 
                   </div>
                   {/* Date */}
-                  <span className="text-stone-500 text-xs mt-2 text-right block">
+                  <span className="mt-2 block text-right text-xs text-stone-500 dark:text-stone-400">
                     {new Date(book.createdAt).toLocaleDateString("ja-JP", {
                       year: "numeric",
                       month: "short",

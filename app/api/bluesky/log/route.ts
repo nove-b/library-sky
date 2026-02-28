@@ -157,6 +157,26 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
+    // 画像をアップロード（独自Lexiconと投稿の両方で使用）
+    let imageBlob: { ref: { $link: string }; mimeType: string; size: number } | undefined;
+    if ((book as Book).imageUrl) {
+      try {
+        const imageResponse = await fetch((book as Book).imageUrl);
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get("content-type") ?? "";
+          if (contentType.startsWith("image/")) {
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const uploaded = await agent.uploadBlob(new Uint8Array(imageBuffer), {
+              encoding: contentType,
+            });
+            imageBlob = uploaded.data.blob;
+          }
+        }
+      } catch (error) {
+        console.warn("[POST] Failed to upload image:", error);
+      }
+    }
+
     const recordResponse = await agent.com.atproto.repo.createRecord({
       repo: jwtDid,
       collection: COLLECTION,
@@ -199,11 +219,19 @@ export async function POST(request: NextRequest) {
 
     const text = lines.join("\n");
     const facets = await buildFacets(agent, text);
-    const imageEmbed = await buildImageEmbed(
-      agent,
-      (book as Book).imageUrl,
-      (book as Book).title
-    );
+
+    // 既にアップロードされた画像blobを使用して埋め込みを作成
+    const imageEmbed = imageBlob
+      ? {
+        $type: "app.bsky.embed.images",
+        images: [
+          {
+            image: imageBlob,
+            alt: `${(book as Book).title} の書影`,
+          },
+        ],
+      }
+      : undefined;
 
     const postResponse = await agent.com.atproto.repo.createRecord({
       repo: jwtDid,
