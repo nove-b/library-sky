@@ -19,6 +19,7 @@ export default function BlueskySessionPanel({
   const [service, setService] = useState("https://bsky.social");
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -124,9 +125,16 @@ export default function BlueskySessionPanel({
 
 
       <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Blueskyに接続</p>
-      <p className="text-xs text-stone-600 dark:text-stone-400">
-        投稿にはアプリパスワードでログインします。
-      </p>
+      <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-400">
+        <p>投稿にはアプリパスワードでログインします。</p>
+        <button
+          type="button"
+          onClick={() => setIsHelpModalOpen(true)}
+          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/70"
+        >
+          取得方法
+        </button>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <input
@@ -159,6 +167,37 @@ export default function BlueskySessionPanel({
         </button>
       </div>
       {notice ? <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p> : null}
+
+      {isHelpModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 px-4"
+          onClick={() => setIsHelpModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-5 shadow-lg dark:border-stone-700 dark:bg-stone-900"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+              アプリパスワードの取得方法
+            </p>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-stone-700 dark:text-stone-300">
+              <li>Blueskyを開き、設定画面に移動します。</li>
+              <li>「プライバシーとセキュリティ」を選択します。</li>
+              <li>「アプリパスワード」を開いて新規作成します。</li>
+              <li>表示されたパスワードをこの画面に入力します。</li>
+            </ol>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsHelpModalOpen(false)}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }
