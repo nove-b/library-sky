@@ -10,6 +10,14 @@ const APPVIEW_SERVICE =
 const COLLECTION =
   process.env.NEXT_PUBLIC_BSKY_COLLECTION || "com.library-sky.bookLog";
 
+// ステータスラベル（日本語）から英語キーへの逆マッピング
+const LABEL_TO_STATUS: Record<string, ReadingStatus> = {
+  "読みたい": "want",
+  "読書中": "reading",
+  "読了": "completed",
+  "中断": "dropped",
+};
+
 interface ExtractedBookLog extends BookLog {
   postUri: string;
 }
@@ -131,9 +139,12 @@ function parseBookLogFromPost(post: BlueskyPost): ExtractedBookLog | null {
   const postCid = typeof post.cid === "string" ? post.cid : "";
   const createdAt = typeof post.record?.createdAt === "string" ? post.record.createdAt : new Date().toISOString();
 
+  // 日本語ラベルを英語キーに変換
+  const statusKey = LABEL_TO_STATUS[status] || status;
+
   // Validate status is a valid ReadingStatus
   const validStatuses: ReadingStatus[] = ["want", "reading", "completed", "dropped"];
-  const finalStatus = validStatuses.includes(status as ReadingStatus) ? (status as ReadingStatus) : ("reading" as const);
+  const finalStatus = validStatuses.includes(statusKey as ReadingStatus) ? (statusKey as ReadingStatus) : ("reading" as const);
 
   return {
     uri: uri || `at://${authorDid}/${postUri}`,
