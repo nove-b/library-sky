@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useSyncExternalStore } from "react";
 import SiteHeader from "./SiteHeader";
+import Footer from "./Footer";
 import type { BlueskySession } from "@/lib/types";
 
 interface LayoutClientProps {
@@ -41,16 +42,23 @@ function parseSession(sessionString: string | null): BlueskySession | null {
 export default function LayoutClient({ children }: LayoutClientProps) {
   const sessionString = useSyncExternalStore(subscribeToSession, getSessionSnapshot, getServerSessionSnapshot);
   const session = parseSession(sessionString);
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") return "light";
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    return storedTheme === "dark" || (!storedTheme && prefersDark) ? "dark" : "light";
-  });
+  const [theme, setTheme] = useState<ThemeMode>("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
+    setMounted(true);
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialTheme = storedTheme === "dark" || (!storedTheme && prefersDark) ? "dark" : "light";
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle("dark", initialTheme === "dark");
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.classList.toggle("dark", theme === "dark");
+    }
+  }, [theme, mounted]);
 
   const handleLogout = () => {
     localStorage.removeItem("library-sky-session");
@@ -66,16 +74,17 @@ export default function LayoutClient({ children }: LayoutClientProps) {
 
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
+    <div className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100 flex flex-col">
       <SiteHeader
         session={session}
         onLogout={handleLogout}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
-      <main className="relative mx-auto flex w-full max-w-3xl flex-col gap-3 px-6 pb-20 pt-28 sm:px-10">
+      <main className="relative mx-auto flex w-full max-w-3xl flex-col gap-3 px-6 pb-20 pt-28 sm:px-10 flex-1">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }
