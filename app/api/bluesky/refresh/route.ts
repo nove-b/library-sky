@@ -8,6 +8,7 @@ const APPVIEW_SERVICE =
   process.env.NEXT_PUBLIC_BSKY_APPVIEW_SERVICE || "https://public.api.bsky.app";
 
 export async function POST(request: NextRequest) {
+
   try {
     const body = await request.json();
     const { refreshJwt, service } = body ?? {};

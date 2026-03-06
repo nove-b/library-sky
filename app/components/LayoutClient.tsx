@@ -3,6 +3,7 @@
 import { useState, useEffect, useSyncExternalStore } from "react";
 import SiteHeader from "./SiteHeader";
 import Footer from "./Footer";
+import SessionExpiredModal from "./SessionExpiredModal";
 import type { BlueskySession } from "@/lib/types";
 
 interface LayoutClientProps {
@@ -44,6 +45,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   const session = parseSession(sessionString);
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [mounted, setMounted] = useState(false);
+  const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -59,6 +61,19 @@ export default function LayoutClient({ children }: LayoutClientProps) {
       document.documentElement.classList.toggle("dark", theme === "dark");
     }
   }, [theme, mounted]);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem("library-sky-session");
+      window.dispatchEvent(new Event("library-sky-session-change"));
+      setIsSessionExpiredModalOpen(true);
+    };
+
+    window.addEventListener("library-sky-session-expired", handleSessionExpired);
+    return () => {
+      window.removeEventListener("library-sky-session-expired", handleSessionExpired);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("library-sky-session");
@@ -85,6 +100,10 @@ export default function LayoutClient({ children }: LayoutClientProps) {
         {children}
       </main>
       <Footer />
+      <SessionExpiredModal
+        isOpen={isSessionExpiredModalOpen}
+        onClose={() => setIsSessionExpiredModalOpen(false)}
+      />
     </div>
   );
 }
