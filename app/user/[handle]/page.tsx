@@ -163,6 +163,10 @@ export default function UserBooksPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          window.dispatchEvent(new Event("library-sky-session-expired"));
+          return;
+        }
         throw new Error("削除に失敗しました");
       }
 

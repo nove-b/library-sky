@@ -96,6 +96,10 @@ export default function LogComposer({ session }: LogComposerProps) {
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          window.dispatchEvent(new Event("library-sky-session-expired"));
+          return;
+        }
         const errorBody = await response.json().catch(() => null);
         const missingFields =
           errorBody && Array.isArray(errorBody.missingFields)
