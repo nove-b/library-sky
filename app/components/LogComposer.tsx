@@ -96,7 +96,7 @@ export default function LogComposer({ session }: LogComposerProps) {
       });
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 400) {
+        if (response.status === 401 || response.status === 403) {
           window.dispatchEvent(new Event("library-sky-session-expired"));
           return;
         }

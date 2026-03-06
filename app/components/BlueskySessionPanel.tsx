@@ -57,7 +57,7 @@ export default function BlueskySessionPanel({
         } else {
           // Refresh failed, clear session
           localStorage.removeItem(STORAGE_KEY);
-          if (response.status === 401 || response.status === 400) {
+          if (response.status === 401 || response.status === 403) {
             window.dispatchEvent(new Event("library-sky-session-expired"));
           }
         }
