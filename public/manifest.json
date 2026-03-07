@@ -1,0 +1,17 @@
+{
+  "name": "Library Sky - Blueskyで読書ログ",
+  "short_name": "Library Sky",
+  "description": "Blueskyにログインして、読書ログを手軽に記録。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
