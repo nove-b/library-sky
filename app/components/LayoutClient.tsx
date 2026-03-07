@@ -1,9 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, useSyncExternalStore } from "react";
 import SiteHeader from "./SiteHeader";
 import Footer from "./Footer";
 import SessionExpiredModal from "./SessionExpiredModal";
+import PWAInstallBanner from "./PWAInstallBanner";
 import type { BlueskySession } from "@/lib/types";
 
 interface LayoutClientProps {
@@ -104,6 +106,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
         isOpen={isSessionExpiredModalOpen}
         onClose={() => setIsSessionExpiredModalOpen(false)}
       />
+      <PWAInstallBanner />
     </div>
   );
 }

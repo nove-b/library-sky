@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession } from "@/lib/types";
 
 interface BlueskySessionPanelProps {
@@ -127,13 +128,13 @@ export default function BlueskySessionPanel({
     >
 
 
-      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Blueskyに接続</p>
+      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100"><BlueskyLink asLink={false} />に接続</p>
       <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-400">
         <p>投稿にはアプリパスワードでログインします。</p>
         <button
           type="button"
           onClick={() => setIsHelpModalOpen(true)}
-          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/70"
+          className="whitespace-nowrap rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/70"
         >
           取得方法
         </button>
@@ -184,7 +185,7 @@ export default function BlueskySessionPanel({
               アプリパスワードの取得方法
             </p>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-stone-700 dark:text-stone-300">
-              <li>Blueskyを開き、設定画面に移動します。</li>
+              <li><BlueskyLink asLink={false} />を開き、設定画面に移動します。</li>
               <li>「プライバシーとセキュリティ」を選択します。</li>
               <li>「アプリパスワード」を開いて新規作成します。</li>
               <li>表示されたパスワードをこの画面に入力します。</li>
