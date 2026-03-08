@@ -2,6 +2,8 @@
 
 import type { FormEvent } from "react";
 import { useState } from "react";
+import Link from "next/link";
+import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession, Book, ReadingStatus } from "@/lib/types";
 
 const statusOptions: { value: ReadingStatus; label: string }[] = [
@@ -28,6 +30,7 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [hasSearched, setHasSearched] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
 
   const handleSearch = async () => {
     if (!title.trim()) {
@@ -116,9 +119,21 @@ export default function LogComposer({ session }: LogComposerProps) {
         throw new Error(`${errorMessage}${detail}`);
       }
 
+      const data = await response.json();
+
+      // recordUri から handle と tid を抽出
+      if (data.recordUri) {
+        const parts = data.recordUri.split("/");
+        const tid = parts[parts.length - 1];
+        const handle = session.handle;
+        const detailUrl = `/log/${handle}/${tid}?uri=${encodeURIComponent(data.recordUri)}`;
+        setPostedLogUrl(detailUrl);
+      }
+
       setComment("");
       setNotice("Blueskyに投稿しました。");
     } catch (error) {
+      setPostedLogUrl(null);
       setNotice(
         error instanceof Error
           ? `投稿できませんでした: ${error.message}`
@@ -133,7 +148,7 @@ export default function LogComposer({ session }: LogComposerProps) {
     <section id="compose" className="space-y-5">
       {!session ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          読書ログを投稿するにはBlueskyにログインしてください。
+          読書ログを投稿するには<BlueskyLink asLink={false} />にログインしてください。
         </div>
       ) : null}
       <form
@@ -142,7 +157,7 @@ export default function LogComposer({ session }: LogComposerProps) {
       >
         <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">読書ログを投稿</p>
         <p className="text-xs text-stone-600 dark:text-stone-400">
-          読んだ本の情報と感想をBlueskyに投稿できます。
+          読んだ本の情報と感想を<BlueskyLink asLink={false} />に投稿できます。
         </p>
 
         <div className="mb-3">
@@ -238,14 +253,31 @@ export default function LogComposer({ session }: LogComposerProps) {
         <div className="mb-3">
           <label className="space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
             評価 ({rating}/5)
-            <input
-              type="range"
-              min={0}
-              max={5}
-              value={rating}
-              onChange={(event) => setRating(Number(event.target.value))}
-              className="w-full mt-2"
-            />
+            <div className="flex gap-1 mt-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={(e) => {
+                    const stars = e.currentTarget.parentElement?.querySelectorAll('button');
+                    stars?.forEach((s, i) => {
+                      s.style.opacity = i < star ? '1' : '0.3';
+                    });
+                  }}
+                  onMouseLeave={(e) => {
+                    const stars = e.currentTarget.parentElement?.querySelectorAll('button');
+                    stars?.forEach((s, i) => {
+                      s.style.opacity = i < rating ? '1' : '0.3';
+                    });
+                  }}
+                  className="text-2xl transition-all duration-150 hover:scale-110"
+                  style={{ opacity: star <= rating ? 1 : 0.3 }}
+                >
+                  ⭐️
+                </button>
+              ))}
+            </div>
           </label>
         </div>
 
@@ -262,14 +294,26 @@ export default function LogComposer({ session }: LogComposerProps) {
           </label>
         </div>
 
-        {notice ? <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p> : null}
+        {notice && (
+          <div className="space-y-2">
+            <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p>
+            {postedLogUrl && (
+              <Link
+                href={postedLogUrl}
+                className="inline-block text-xs text-blue-600 underline transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                投稿した読書ログを見る →
+              </Link>
+            )}
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={isPosting || !session}
           className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isPosting ? "投稿中..." : "Blueskyに投稿"}
+          {isPosting ? "投稿中..." : (<><BlueskyLink asLink={false} className="inline-flex items-center gap-1 text-white" />に投稿</>)}
         </button>
       </form>
     </section>

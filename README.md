@@ -1,59 +1,75 @@
-# Library Sky
+<p align="center">
+	<img src="public/icon.svg" alt="Library Sky Logo" width="84" />
+</p>
 
-Blueskyソーシャルメディアプラットフォームでのあなたの投稿を整理・管理するウェブアプリケーションです。
+<h1 align="center">Library Sky</h1>
 
-## 概要
+<p align="center">
+	Blueskyで読書ログを記録・共有するためのWebアプリ
+</p>
 
-**Library Sky** は、Bluesky上の投稿（ログ）を記録し、ユーザーのプロフィール情報やスレッド情報を取得・表示できるプラットフォームです。AT Protocol（Bluesky API）を活用し、セッション管理、投稿管理、プロフィール表示などの機能を提供します。
+---
 
-### 主な機能
+## できること
 
-- **Blueskyログイン認証**: セキュアなセッション管理によるユーザー認証
-- **投稿管理**: Bluesky上の投稿を記録・表示
-- **プロフィール表示**: ユーザープロフィール情報の取得・表示
-- **スレッド表示**: 投稿スレッド情報の取得
-- **フィード管理**: カスタムフィードの作成・管理
+- Blueskyアカウントでログインして読書ログを投稿
+- 本の検索結果からタイトル・著者・画像をすばやく入力
+- ステータス（読みたい / 読書中 / 読了 / 中断）と評価・コメントを記録
+- ユーザーページで自分のログを一覧表示
+- PWAとしてインストールし、ホーム画面から起動
 
-### 技術スタック
+## こんな人向け
 
-- **フレームワーク**: [Next.js](https://nextjs.org) 16.1.6
-- **言語**: TypeScript
-- **UI**: React 19.2.3
-- **スタイリング**: Tailwind CSS 4
-- **API**: [@atproto/api](https://github.com/bluesky-social/atproto) (Bluesky SDK)
-- **HTTP Client**: Axios
+- 読書記録をSNSで気軽に残したい
+- Blueskyで読書仲間の投稿を見つけたい
+- 読了履歴を自分のタイムラインとして管理したい
 
-## Getting Started
+## 画面の使い方
 
-First, run the development server:
+1. トップページでBlueskyに接続
+2. 書籍名で検索して本を選択
+3. ステータス・評価・コメントを入力
+4. 投稿ボタンでBlueskyへ送信
+
+## PWAインストール
+
+- 未インストール時は画面下にインストールバナーを表示
+- バナーを閉じた場合は1週間後に再表示
+- Chrome/Edgeでは「インストール」ボタン、iOS Safariでは「ホーム画面に追加」で利用可能
+
+## 開発環境セットアップ
+
+### 必要環境
+
+- Node.js 20+
+- pnpm
+
+### 起動手順
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+起動後、`http://localhost:3000` にアクセスしてください。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## スクリプト
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `pnpm dev` : 開発サーバー起動
+- `pnpm build` : 本番ビルド
+- `pnpm start` : 本番サーバー起動
+- `pnpm lint` : Lint実行
 
-## Learn More
+## 技術スタック
 
-To learn more about Next.js, take a look at the following resources:
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- AT Protocol (`@atproto/api`)
+- PWA (`next-pwa`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 補足
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Blueskyの認証情報はブラウザのローカルストレージに保持されます。
+- 開発中にPWA挙動を再確認する場合は、ブラウザのService Workerとキャッシュを削除してから確認してください。

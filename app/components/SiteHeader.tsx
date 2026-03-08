@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession } from "@/lib/types";
 
 interface SiteHeaderProps {
@@ -16,8 +17,8 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-4 sm:px-10">
         <Link href="/" >
           <div>
-            <p className="text-lg">Library Sky</p>
-            <p className="text-xs text-stone-500 dark:text-stone-400">blueskyで読書ログを取ろう</p>
+            <h1 className="flex items-center gap-2"><img className="w-5 h-5" src="/icon.svg" alt="" /><span>Library Sky</span></h1>
+            <p className="text-xs text-stone-500 dark:text-stone-400"><BlueskyLink asLink={false} />で読書ログを取ろう</p>
           </div>
         </Link>
         <div className="flex items-center gap-3">

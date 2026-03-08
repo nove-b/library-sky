@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession } from "@/lib/types";
 
 interface BlueskySessionPanelProps {
