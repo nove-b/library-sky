@@ -460,8 +460,6 @@ export default function UserBooksPage() {
                               <span className="rounded-full border border-stone-300 bg-stone-100 px-2 py-1 font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
                                 {STATUS_LABELS[book.status] || book.status}
                               </span>
-
-
                             </div>
 
                             {/* Comment */}
@@ -469,6 +467,47 @@ export default function UserBooksPage() {
                               <p className="line-clamp-2 text-sm text-stone-700 dark:text-stone-300">
                                 {book.comment}
                               </p>
+                            )}
+
+                            {/* Engagement metrics */}
+                            {(book.likeCount !== undefined || book.replyCount !== undefined) && (
+                              <div className="flex items-center gap-3 text-xs">
+                                {book.likeCount !== undefined && (
+                                  <span className="flex items-center gap-1 text-stone-600 dark:text-stone-400">
+                                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                    </svg>
+                                    {book.likeCount}
+                                  </span>
+                                )}
+                                {book.replyCount !== undefined && (
+                                  <span className="flex items-center gap-1 text-stone-600 dark:text-stone-400">
+                                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                                    </svg>
+                                    {book.replyCount}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Bluesky Post Link */}
+                            {book.postUri && (
+                              <div className="flex items-center pt-1">
+                                <a
+                                  href={book.postUri.replace('at://', 'https://bsky.app/profile/').replace('/app.bsky.feed.post/', '/post/')}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1 text-xs text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                  title="Blueskyで見る"
+                                >
+                                  <svg className="h-3.5 w-3.5" viewBox="0 0 600 530" fill="currentColor">
+                                    <path d="M135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0174-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
+                                  </svg>
+                                  <span>Blueskyで見る</span>
+                                </a>
+                              </div>
                             )}
 
                             {/* External Links */}

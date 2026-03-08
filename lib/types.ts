@@ -19,6 +19,9 @@ export interface BookLog {
   comment: string;
   createdAt: string;
   postUri: string;
+  likeCount?: number;
+  replyCount?: number;
+  repostCount?: number;
 }
 
 export interface UserProfile {

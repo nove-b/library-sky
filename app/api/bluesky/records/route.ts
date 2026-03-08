@@ -223,6 +223,18 @@ export async function GET(request: NextRequest) {
           return null;
         }
 
+        // Add engagement metrics from post
+        const post = item.post as Record<string, unknown>;
+        if (typeof post.likeCount === 'number') {
+          parsed.likeCount = post.likeCount;
+        }
+        if (typeof post.replyCount === 'number') {
+          parsed.replyCount = post.replyCount;
+        }
+        if (typeof post.repostCount === 'number') {
+          parsed.repostCount = post.repostCount;
+        }
+
         // Try to match record by full URI first, then by TID
         let record = recordMap.get(parsed.uri);
         if (!record && parsed.uri) {

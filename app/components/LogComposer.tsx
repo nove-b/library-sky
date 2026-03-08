@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useState } from "react";
+import Link from "next/link";
 import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession, Book, ReadingStatus } from "@/lib/types";
 
@@ -29,6 +30,7 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [hasSearched, setHasSearched] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
 
   const handleSearch = async () => {
     if (!title.trim()) {
@@ -117,9 +119,21 @@ export default function LogComposer({ session }: LogComposerProps) {
         throw new Error(`${errorMessage}${detail}`);
       }
 
+      const data = await response.json();
+
+      // recordUri から handle と tid を抽出
+      if (data.recordUri) {
+        const parts = data.recordUri.split("/");
+        const tid = parts[parts.length - 1];
+        const handle = session.handle;
+        const detailUrl = `/log/${handle}/${tid}?uri=${encodeURIComponent(data.recordUri)}`;
+        setPostedLogUrl(detailUrl);
+      }
+
       setComment("");
       setNotice("Blueskyに投稿しました。");
     } catch (error) {
+      setPostedLogUrl(null);
       setNotice(
         error instanceof Error
           ? `投稿できませんでした: ${error.message}`
@@ -280,7 +294,19 @@ export default function LogComposer({ session }: LogComposerProps) {
           </label>
         </div>
 
-        {notice ? <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p> : null}
+        {notice && (
+          <div className="space-y-2">
+            <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p>
+            {postedLogUrl && (
+              <Link
+                href={postedLogUrl}
+                className="inline-block text-xs text-blue-600 underline transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                投稿した読書ログを見る →
+              </Link>
+            )}
+          </div>
+        )}
 
         <button
           type="submit"
