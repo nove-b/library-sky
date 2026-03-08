@@ -46,10 +46,7 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
           {session && (
             <button
               type="button"
-              onClick={() => {
-                window.dispatchEvent(new Event("library-sky-session-change"));
-                onLogout();
-              }}
+              onClick={onLogout}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
               aria-label="ログアウト"
               title="ログアウト"

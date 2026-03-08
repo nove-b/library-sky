@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@atproto/api": "^0.14.6",
+    "@atproto/oauth-client-node": "^0.3.17",
     "axios": "^1.13.5",
     "next": "16.1.6",
     "react": "19.2.3",
