@@ -79,8 +79,9 @@ function parseGoogleBooksResponse(data: GoogleBooksResponse) {
     const isbn13 = identifiers.find(id => id.type === "ISBN_13")?.identifier;
     const isbn10 = identifiers.find(id => id.type === "ISBN_10")?.identifier;
     const isbn = isbn13 || isbn10;
-    const displayTitle = isbn || title.includes("電子版") ? title : `${title}（電子版）`;
+    const displayTitle = title;
     const asin = isbn || item.id || `google-books-${index}`;
+    const isbnBased = !!isbn;
 
     const imageUrl = volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || "";
 
@@ -94,10 +95,37 @@ function parseGoogleBooksResponse(data: GoogleBooksResponse) {
       price,
       imageUrl: imageUrl.replace("http://", "https://"),
       author,
+      isbnBased,
     };
   });
 
-  return { success: items.length > 0, count: items.length, items };
+  // タイトルを正規化（句読点と余白を削除）して重複判定
+  const normalizeTitle = (t: string) => t.replace(/[！!?？\s　]/g, "").toLowerCase();
+
+  const titleGroups = new Map<string, typeof items>();
+  for (const item of items) {
+    const normalized = normalizeTitle(item.title);
+    if (!titleGroups.has(normalized)) {
+      titleGroups.set(normalized, []);
+    }
+    titleGroups.get(normalized)!.push(item);
+  }
+
+  const dedupedItems: Omit<(typeof items)[0], "isbnBased">[] = [];
+  for (const group of titleGroups.values()) {
+    if (group.length > 1) {
+      // 複数がある場合、ISBN 版を優先して、最初の1つだけを採用
+      const withIsbn = group.filter(item => item.isbnBased);
+      const itemToAdd = withIsbn.length > 0 ? withIsbn[0] : group[0];
+      const { isbnBased, ...item } = itemToAdd;
+      dedupedItems.push(item);
+    } else {
+      const { isbnBased, ...item } = group[0];
+      dedupedItems.push(item);
+    }
+  }
+
+  return { success: dedupedItems.length > 0, count: dedupedItems.length, items: dedupedItems };
 }
 
 export async function GET(request: NextRequest) {
