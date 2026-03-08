@@ -78,7 +78,9 @@ function parseGoogleBooksResponse(data: GoogleBooksResponse) {
     const identifiers = volumeInfo.industryIdentifiers || [];
     const isbn13 = identifiers.find(id => id.type === "ISBN_13")?.identifier;
     const isbn10 = identifiers.find(id => id.type === "ISBN_10")?.identifier;
-    const asin = isbn13 || isbn10 || item.id || `google-books-${index}`;
+    const isbn = isbn13 || isbn10;
+    const displayTitle = isbn || title.includes("電子版") ? title : `${title}（電子版）`;
+    const asin = isbn || item.id || `google-books-${index}`;
 
     const imageUrl = volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || "";
 
@@ -87,7 +89,7 @@ function parseGoogleBooksResponse(data: GoogleBooksResponse) {
       : "";
 
     return {
-      title,
+      title: displayTitle,
       asin,
       price,
       imageUrl: imageUrl.replace("http://", "https://"),

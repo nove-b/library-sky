@@ -77,9 +77,19 @@ export default function LayoutClient({ children }: LayoutClientProps) {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("library-sky-session");
-    window.dispatchEvent(new Event("library-sky-session-change"));
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/bluesky/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ did: session?.did ?? null }),
+      });
+    } catch {
+      // no-op
+    } finally {
+      localStorage.removeItem("library-sky-session");
+      window.dispatchEvent(new Event("library-sky-session-change"));
+    }
   };
 
   const toggleTheme = () => {

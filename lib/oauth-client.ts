@@ -5,6 +5,7 @@ import {
   type NodeSavedSession,
   type NodeSavedSessionStore,
 } from "@atproto/oauth-client-node";
+import { Agent } from "@atproto/api";
 
 // Use globalThis to persist stores across Next.js hot reloads in dev mode
 const globalStore = globalThis as unknown as {
@@ -38,6 +39,30 @@ const sessionStore: NodeSavedSessionStore = {
   set: (key: string, val: NodeSavedSession) => { getSessionMap().set(key, val); },
   del: (key: string) => { getSessionMap().delete(key); },
 };
+
+export function getOAuthStoredTokens(sub: string): {
+  accessJwt: string;
+  refreshJwt: string;
+} | null {
+  const session = getSessionMap().get(sub) as unknown as {
+    tokenSet?: { access_token?: string; refresh_token?: string };
+  } | undefined;
+
+  if (!session?.tokenSet?.access_token) {
+    return null;
+  }
+
+  return {
+    accessJwt: session.tokenSet.access_token,
+    refreshJwt: session.tokenSet.refresh_token ?? "",
+  };
+}
+
+export async function createOAuthAgent(sub: string): Promise<Agent> {
+  const oauthClient = getOAuthClient();
+  const oauthSession = await oauthClient.restore(sub, "auto");
+  return new Agent(oauthSession);
+}
 
 export function getOAuthClient(): NodeOAuthClient {
   if (globalStore.__oauthClient) return globalStore.__oauthClient;

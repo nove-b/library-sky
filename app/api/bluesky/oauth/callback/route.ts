@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
     const did = session.did;
 
     // Fetch user profile details
-    let handle = did;
-    let displayName = did;
+    let handle: string = did;
+    let displayName: string = did;
     let avatarUrl = "";
     let service = "https://bsky.social";
 

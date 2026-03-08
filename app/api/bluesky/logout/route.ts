@@ -6,18 +6,16 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const { sessionId } = body ?? {};
 
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: "sessionId is required" },
-        { status: 400 }
-      );
+    if (typeof sessionId === "string" && sessionId) {
+      logoutSession(sessionId);
     }
 
-    logoutSession(sessionId);
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    response.cookies.delete("bsky_session");
+    return response;
   } catch {
     return NextResponse.json(
       { error: "Failed to logout" },

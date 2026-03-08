@@ -50,6 +50,7 @@ export default function LogComposer({ session }: LogComposerProps) {
         throw new Error("Failed to search");
       }
       const data = await response.json();
+      console.log("Search data:", data);
       setSearchResults(data.items ?? []);
       setHasSearched(true);
     } catch {

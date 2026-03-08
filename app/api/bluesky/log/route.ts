@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Agent } from "@atproto/api";
 import type { Book, ReadingStatus } from "@/lib/types";
 import {
   createAgent,
   DEFAULT_BSKY_SERVICE,
   refreshSession,
 } from "@/lib/bluesky";
+import { createOAuthAgent, getOAuthStoredTokens } from "@/lib/oauth-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,13 +41,34 @@ export async function POST(request: NextRequest) {
 
     let effectiveAccessJwt =
       typeof accessJwt === "string" ? accessJwt.trim() : "";
+    let effectiveRefreshJwt =
+      typeof refreshJwt === "string" ? refreshJwt.trim() : "";
     let effectiveDid = typeof did === "string" ? did.trim() : "";
     let effectiveHandle = typeof handle === "string" ? handle.trim() : "";
+    let isOAuthSession = false;
 
-    if ((!effectiveAccessJwt || !effectiveDid) && typeof refreshJwt === "string" && refreshJwt.trim()) {
+    const oauthDidFromAccess = effectiveAccessJwt.startsWith("oauth:")
+      ? effectiveAccessJwt.slice("oauth:".length).trim()
+      : "";
+    const oauthDidFromRefresh = effectiveRefreshJwt.startsWith("oauth:")
+      ? effectiveRefreshJwt.slice("oauth:".length).trim()
+      : "";
+    const oauthDid = oauthDidFromAccess || oauthDidFromRefresh;
+
+    if (oauthDid) {
+      isOAuthSession = true;
+      effectiveDid = effectiveDid || oauthDid;
+      const oauthTokens = getOAuthStoredTokens(oauthDid);
+      if (oauthTokens) {
+        effectiveAccessJwt = oauthTokens.accessJwt;
+        effectiveRefreshJwt = oauthTokens.refreshJwt || effectiveRefreshJwt;
+      }
+    }
+
+    if ((!effectiveAccessJwt || !effectiveDid) && effectiveRefreshJwt) {
       try {
         const refreshed = await refreshSession({
-          refreshJwt,
+          refreshJwt: effectiveRefreshJwt,
           service: service ?? DEFAULT_BSKY_SERVICE,
         });
         effectiveAccessJwt = refreshed.accessJwt || effectiveAccessJwt;
@@ -84,11 +107,15 @@ export async function POST(request: NextRequest) {
         jwtHandle = decoded.handle;
       }
     } catch (error) {
-      console.error("[POST] JWT decode failed:", error);
-      return NextResponse.json(
-        { error: "Invalid authentication token" },
-        { status: 401 }
-      );
+      if (isOAuthSession && effectiveDid) {
+        jwtDid = effectiveDid;
+      } else {
+        console.error("[POST] JWT decode failed:", error);
+        return NextResponse.json(
+          { error: "Invalid authentication token" },
+          { status: 401 }
+        );
+      }
     }
 
     if (effectiveDid && jwtDid !== effectiveDid) {
@@ -105,14 +132,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const agent = createAgent(service ?? DEFAULT_BSKY_SERVICE);
-    await agent.resumeSession({
-      accessJwt: effectiveAccessJwt,
-      refreshJwt: refreshJwt ?? "",
-      did: jwtDid,
-      handle: jwtHandle,
-      active: true,
-    });
+    let agent: Agent;
+    if (isOAuthSession) {
+      agent = await createOAuthAgent(jwtDid);
+    } else {
+      const credentialAgent = createAgent(service ?? DEFAULT_BSKY_SERVICE);
+      await credentialAgent.resumeSession({
+        accessJwt: effectiveAccessJwt,
+        refreshJwt: effectiveRefreshJwt,
+        did: jwtDid,
+        handle: jwtHandle,
+        active: true,
+      });
+      agent = credentialAgent;
+    }
 
     const now = new Date().toISOString();
 
