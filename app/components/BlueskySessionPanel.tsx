@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { BlueskySession } from "@/lib/types";
 
 interface BlueskySessionPanelProps {
@@ -14,16 +15,43 @@ export default function BlueskySessionPanel({
   session,
   onSessionChange,
 }: BlueskySessionPanelProps) {
-  const [handle, setHandle] = useState("");
-  const [appPassword, setAppPassword] = useState("");
-  const [service, setService] = useState("https://bsky.social");
+  const searchParams = useSearchParams();
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   useEffect(() => {
     const loadSession = async () => {
       if (session) return;
+
+      // Check for OAuth errors
+      const oauthError = searchParams.get("oauth_error");
+      if (oauthError) {
+        setNotice(`ログインエラー: ${oauthError}`);
+        return;
+      }
+
+      // Try to fetch session from API (set by OAuth callback)
+      try {
+        const response = await fetch("/api/bluesky/me");
+        if (response.ok) {
+          const data = await response.json();
+          const newSession: BlueskySession = {
+            handle: data.handle,
+            displayName: data.displayName ?? data.handle,
+            avatarUrl: data.avatarUrl ?? "",
+            did: data.did,
+            accessJwt: data.accessJwt,
+            refreshJwt: data.refreshJwt,
+            service: data.service,
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
+          window.dispatchEvent(new Event("library-sky-session-change"));
+          onSessionChange(newSession);
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to fetch session from API:", error);
+      }
 
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return;
@@ -68,48 +96,29 @@ export default function BlueskySessionPanel({
     };
 
     loadSession();
-  }, [onSessionChange, session]);
+  }, [onSessionChange, session, searchParams]);
 
-  const handleLogin = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setNotice(null);
-
-    if (!handle || !appPassword) {
-      setNotice("ハンドルとアプリパスワードを入力してください。");
-      return;
-    }
-
+  const handleOAuthLogin = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/bluesky/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handle, appPassword, service }),
-      });
+      // Get the authorize URL from the API
+      const response = await fetch("/api/bluesky/oauth/authorize");
 
-      if (!response.ok) {
-        throw new Error("Login failed");
+      if (response.redirected) {
+        // Follow the redirect manually
+        window.location.href = response.url;
+      } else if (response.status >= 300 && response.status < 400) {
+        // Handle 3xx status
+        const location = response.headers.get("Location");
+        if (location) {
+          window.location.href = location;
+        }
+      } else {
+        throw new Error("Failed to authorize");
       }
-
-      const data = await response.json();
-      const newSession: BlueskySession = {
-        handle: data.handle,
-        displayName: data.displayName ?? data.handle,
-        avatarUrl: data.avatarUrl ?? "",
-        did: data.did,
-        accessJwt: data.accessJwt,
-        refreshJwt: data.refreshJwt,
-        service: data.service,
-      };
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
-      window.dispatchEvent(new Event("library-sky-session-change"));
-      onSessionChange(newSession);
-      setAppPassword("");
-      setNotice("Blueskyに接続しました。");
-    } catch {
-      setNotice("ログインできませんでした。ハンドルとアプリパスワードをご確認ください。");
-    } finally {
+    } catch (error) {
+      console.error("OAuth login error:", error);
+      setNotice("ログインの開始に失敗しました。");
       setIsLoading(false);
     }
   };
@@ -117,90 +126,27 @@ export default function BlueskySessionPanel({
 
 
   if (session) {
-    return null
+    return null;
   }
 
   return (
-    <form
-      onSubmit={handleLogin}
-      className="space-y-4 rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-800 dark:bg-stone-900"
-    >
-
-
-      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Blueskyに接続</p>
-      <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-400">
-        <p>投稿にはアプリパスワードでログインします。</p>
-        <button
-          type="button"
-          onClick={() => setIsHelpModalOpen(true)}
-          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/70"
-        >
-          取得方法
-        </button>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <input
-          value={handle}
-          onChange={(event) => setHandle(event.target.value)}
-          placeholder="handle.bsky.social"
-          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
-        />
-        <input
-          type="password"
-          value={appPassword}
-          onChange={(event) => setAppPassword(event.target.value)}
-          placeholder="アプリパスワード"
-          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
-        />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-        <input
-          value={service}
-          onChange={(event) => setService(event.target.value)}
-          placeholder="https://bsky.social"
-          className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
-        />
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isLoading ? "接続中..." : "接続"}
-        </button>
-      </div>
-      {notice ? <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p> : null}
-
-      {isHelpModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 px-4"
-          onClick={() => setIsHelpModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-5 shadow-lg dark:border-stone-700 dark:bg-stone-900"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">
-              アプリパスワードの取得方法
-            </p>
-            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-stone-700 dark:text-stone-300">
-              <li>Blueskyを開き、設定画面に移動します。</li>
-              <li>「プライバシーとセキュリティ」を選択します。</li>
-              <li>「アプリパスワード」を開いて新規作成します。</li>
-              <li>表示されたパスワードをこの画面に入力します。</li>
-            </ol>
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsHelpModalOpen(false)}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
-              >
-                閉じる
-              </button>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-800 dark:bg-stone-900">
+      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+        Blueskyに接続
+      </p>
+      <p className="text-sm text-stone-600 dark:text-stone-400">
+        Bluesky OAuthを使用してセキュアにログインします。
+      </p>
+      <button
+        onClick={handleOAuthLogin}
+        disabled={isLoading}
+        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isLoading ? "接続中..." : "Blueskyでログイン"}
+      </button>
+      {notice ? (
+        <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p>
       ) : null}
-    </form>
+    </div>
   );
 }

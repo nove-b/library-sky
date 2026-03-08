@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     }
     const ratingStars = "⭐".repeat(Math.max(0, Math.min(rating, 5)));
     const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      process.env.NEXT_PUBLIC_BASE_URL || "http://127.0.0.1:3000";
 
     // レコードURI をエンコードしてURLに含める
     const encodedRecordUri = encodeURIComponent(recordUri);

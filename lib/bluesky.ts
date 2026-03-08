@@ -105,3 +105,116 @@ export async function buildFacets(agent: BskyAgent, text: string) {
   await richText.detectFacets(agent);
   return richText.facets;
 }
+
+// OAuth-related functions
+export function generateOAuthState(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+export function generateOAuthCodeVerifier(): string {
+  return crypto.randomBytes(32).toString("base64url");
+}
+
+export function generateOAuthCodeChallenge(verifier: string): string {
+  return crypto
+    .createHash("sha256")
+    .update(verifier)
+    .digest("base64url");
+}
+
+export function getOAuthAuthorizeUrl(params: {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+  codeChallenge: string;
+  service?: string;
+}): string {
+  const service = params.service ?? DEFAULT_BSKY_SERVICE;
+  const url = new URL(service);
+  url.pathname = "/oauth/authorize";
+
+  url.searchParams.set("client_id", params.clientId);
+  url.searchParams.set("redirect_uri", params.redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "atproto");
+  url.searchParams.set("state", params.state);
+  url.searchParams.set("code_challenge", params.codeChallenge);
+  url.searchParams.set("code_challenge_method", "S256");
+
+  return url.toString();
+}
+
+export async function exchangeOAuthCode(params: {
+  code: string;
+  codeVerifier: string;
+  clientId: string;
+  redirectUri: string;
+  service?: string;
+}) {
+  const service = params.service ?? DEFAULT_BSKY_SERVICE;
+  const url = new URL(service);
+  url.pathname = "/oauth/token";
+
+  const requestBody: Record<string, unknown> = {
+    grant_type: "authorization_code",
+    code: params.code,
+    code_verifier: params.codeVerifier,
+    client_id: params.clientId,
+    redirect_uri: params.redirectUri,
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText);
+    throw new Error(`OAuth token exchange failed: ${errorText}`);
+  }
+
+  const data = await response.json() as {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+    scope: string;
+  };
+
+  return {
+    accessJwt: data.access_token,
+    refreshJwt: data.refresh_token,
+  };
+}
+
+export async function resumeOAuthSession(params: {
+  accessJwt: string;
+  refreshJwt: string;
+  service?: string;
+}) {
+  const agent = createAgent(params.service);
+
+  // Create a session with OAuth tokens
+  const session = {
+    accessJwt: params.accessJwt,
+    refreshJwt: params.refreshJwt,
+    did: "", // Will be populated by resumeSession
+    handle: "", // Will be populated by resumeSession
+    active: true,
+  };
+
+  await agent.resumeSession(session);
+
+  if (!agent.session) {
+    throw new Error("Failed to resume OAuth session");
+  }
+
+  return {
+    handle: agent.session.handle,
+    did: agent.session.did,
+    accessJwt: agent.session.accessJwt,
+    refreshJwt: agent.session.refreshJwt,
+  };
+}
