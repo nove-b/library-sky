@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const { uri, postUri, accessJwt, refreshJwt } = body ?? {};
+    const { uri, postUri, accessJwt, refreshJwt, did } = body ?? {};
 
     if (!uri || !accessJwt) {
       return NextResponse.json(
@@ -290,18 +290,48 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    let effectiveAccessJwt =
+      typeof accessJwt === "string" ? accessJwt.trim() : "";
+    let effectiveRefreshJwt =
+      typeof refreshJwt === "string" ? refreshJwt.trim() : "";
+    let effectiveDid = typeof did === "string" ? did.trim() : "";
+    let isOAuthSession = false;
+
+    const oauthDidFromAccess = effectiveAccessJwt.startsWith("oauth:")
+      ? effectiveAccessJwt.slice("oauth:".length).trim()
+      : "";
+    const oauthDidFromRefresh = effectiveRefreshJwt.startsWith("oauth:")
+      ? effectiveRefreshJwt.slice("oauth:".length).trim()
+      : "";
+    const oauthDid = oauthDidFromAccess || oauthDidFromRefresh;
+
+    if (oauthDid) {
+      isOAuthSession = true;
+      effectiveDid = effectiveDid || oauthDid;
+      const oauthTokens = getOAuthStoredTokens(oauthDid);
+      if (oauthTokens) {
+        effectiveAccessJwt = oauthTokens.accessJwt;
+        effectiveRefreshJwt = oauthTokens.refreshJwt || effectiveRefreshJwt;
+      }
+    }
+
     let currentUserDid: string;
     let currentHandle = "";
     try {
-      const decoded = decodeDidFromJwt(accessJwt);
+      const decoded = decodeDidFromJwt(effectiveAccessJwt);
       currentUserDid = decoded.did;
       currentHandle = decoded.handle;
     } catch (error) {
-      console.error("[DELETE] JWT decode failed:", error);
-      return NextResponse.json(
-        { error: "Invalid authentication token" },
-        { status: 401 }
-      );
+      if (isOAuthSession && effectiveDid) {
+        currentUserDid = effectiveDid;
+        currentHandle = "";
+      } else {
+        console.error("[DELETE] JWT decode failed:", error);
+        return NextResponse.json(
+          { error: "Invalid authentication token" },
+          { status: 401 }
+        );
+      }
     }
 
     let recordUri = uri;
@@ -326,22 +356,29 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const agent = createAgent(DEFAULT_BSKY_SERVICE);
+    let agent: Agent;
+    if (isOAuthSession) {
+      agent = await createOAuthAgent(currentUserDid);
+    } else {
+      const credentialAgent = createAgent(DEFAULT_BSKY_SERVICE);
 
-    try {
-      await agent.resumeSession({
-        accessJwt,
-        refreshJwt: refreshJwt ?? "",
-        did: currentUserDid,
-        handle: currentHandle,
-        active: true,
-      });
-    } catch (sessionError) {
-      console.error("[DELETE] Session resume failed:", sessionError);
-      return NextResponse.json(
-        { error: "Session has expired. Please log in again." },
-        { status: 401 }
-      );
+      try {
+        await credentialAgent.resumeSession({
+          accessJwt: effectiveAccessJwt,
+          refreshJwt: effectiveRefreshJwt ?? "",
+          did: currentUserDid,
+          handle: currentHandle,
+          active: true,
+        });
+      } catch (sessionError) {
+        console.error("[DELETE] Session resume failed:", sessionError);
+        return NextResponse.json(
+          { error: "Session has expired. Please log in again." },
+          { status: 401 }
+        );
+      }
+
+      agent = credentialAgent;
     }
 
     // Delete lexicon record
