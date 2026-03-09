@@ -18,7 +18,6 @@ export default function BlueskySessionPanel({
 }: BlueskySessionPanelProps) {
   const searchParams = useSearchParams();
   const [notice, setNotice] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -99,32 +98,9 @@ export default function BlueskySessionPanel({
     loadSession();
   }, [onSessionChange, session, searchParams]);
 
-  const handleOAuthLogin = async () => {
-    setIsLoading(true);
-    try {
-      // Get the authorize URL from the API
-      const response = await fetch("/api/bluesky/oauth/authorize");
-
-      if (response.redirected) {
-        // Follow the redirect manually
-        window.location.href = response.url;
-      } else if (response.status >= 300 && response.status < 400) {
-        // Handle 3xx status
-        const location = response.headers.get("Location");
-        if (location) {
-          window.location.href = location;
-        }
-      } else {
-        throw new Error("Failed to authorize");
-      }
-    } catch (error) {
-      console.error("OAuth login error:", error);
-      setNotice("ログインの開始に失敗しました。");
-      setIsLoading(false);
-    }
+  const handleOAuthLogin = () => {
+    window.location.assign("/api/bluesky/oauth/authorize");
   };
-
-
 
   if (session) {
     return null;
@@ -140,10 +116,9 @@ export default function BlueskySessionPanel({
       </p>
       <button
         onClick={handleOAuthLogin}
-        disabled={isLoading}
-        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
       >
-        {isLoading ? "接続中..." : "Blueskyでログイン"}
+        Blueskyでログイン
       </button>
       {notice ? (
         <p className="text-xs text-blue-600 dark:text-blue-400">{notice}</p>
