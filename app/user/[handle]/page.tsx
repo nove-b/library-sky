@@ -159,15 +159,25 @@ export default function UserBooksPage() {
           postUri: book.postUri,
           accessJwt: session.accessJwt,
           refreshJwt: session.refreshJwt,
+          did: session.did,
         }),
       });
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
+        const err = await response.json().catch(() => ({}));
+
+        // OAuth時の401でもセッション失効と見なさない
+        const shouldExpire =
+          response.status === 401 &&
+          typeof err?.error === "string" &&
+          /expired|invalid auth|session/i.test(err.error);
+
+        if (shouldExpire) {
           window.dispatchEvent(new Event("library-sky-session-expired"));
           return;
         }
-        throw new Error("削除に失敗しました");
+
+        throw new Error(err?.error || "削除に失敗しました");
       }
 
       // 削除成功後、一覧から該当する本を削除
