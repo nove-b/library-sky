@@ -65,10 +65,23 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   }, [theme, mounted]);
 
   useEffect(() => {
-    const handleSessionExpired = () => {
-      localStorage.removeItem("library-sky-session");
-      window.dispatchEvent(new Event("library-sky-session-change"));
-      setIsSessionExpiredModalOpen(true);
+    const handleSessionExpired = async () => {
+      // Cookieも含めて完全にログアウトする
+      try {
+        const stored = localStorage.getItem("library-sky-session");
+        const did = stored ? (JSON.parse(stored) as { did?: string }).did ?? null : null;
+        await fetch("/api/bluesky/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ did }),
+        });
+      } catch {
+        // no-op
+      } finally {
+        localStorage.removeItem("library-sky-session");
+        window.dispatchEvent(new Event("library-sky-session-change"));
+        setIsSessionExpiredModalOpen(true);
+      }
     };
 
     window.addEventListener("library-sky-session-expired", handleSessionExpired);
