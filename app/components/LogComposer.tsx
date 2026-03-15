@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession, Book, ReadingStatus } from "@/lib/types";
@@ -31,6 +31,22 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [isPosting, setIsPosting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
+
+  // OAuthセッションの有効性をマウント時に確認する
+  useEffect(() => {
+    if (!session?.accessJwt.startsWith("oauth:")) return;
+
+    let cancelled = false;
+    fetch("/api/bluesky/check").then((res) => {
+      if (!res.ok && !cancelled) {
+        window.dispatchEvent(new Event("library-sky-session-expired"));
+      }
+    }).catch(() => { /* ネットワークエラーは無視 */ });
+
+    return () => { cancelled = true; };
+  // sessionのDIDが変わったときだけ再チェック
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.did]);
 
   const handleSearch = async () => {
     if (!title.trim()) {
