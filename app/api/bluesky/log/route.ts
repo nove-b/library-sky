@@ -6,7 +6,7 @@ import {
   DEFAULT_BSKY_SERVICE,
   refreshSession,
 } from "@/lib/bluesky";
-import { createOAuthAgent, getOAuthStoredTokens } from "@/lib/oauth-client";
+import { createOAuthAgent, getOAuthStoredTokens, OAuthSessionExpiredError } from "@/lib/oauth-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -134,7 +134,17 @@ export async function POST(request: NextRequest) {
 
     let agent: Agent;
     if (isOAuthSession) {
-      agent = await createOAuthAgent(jwtDid);
+      try {
+        agent = await createOAuthAgent(jwtDid);
+      } catch (error) {
+        if (error instanceof OAuthSessionExpiredError) {
+          return NextResponse.json(
+            { error: "Session has expired. Please log in again." },
+            { status: 401 }
+          );
+        }
+        throw error;
+      }
     } else {
       const credentialAgent = createAgent(service ?? DEFAULT_BSKY_SERVICE);
       await credentialAgent.resumeSession({

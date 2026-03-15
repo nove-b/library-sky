@@ -7,7 +7,12 @@ import {
 } from "@atproto/oauth-client-node";
 import { Agent } from "@atproto/api";
 
-// Use globalThis to persist stores across Next.js hot reloads in dev mode
+// Use globalThis to persist stores across Next.js hot reloads in dev mode.
+// Note: on serverless platforms (e.g. Netlify), each function invocation may
+// be a fresh process, so sessions stored here will not survive between
+// cold-start invocations. When the session is gone, createOAuthAgent throws
+// OAuthSessionExpiredError and the API returns 401 so the client can prompt
+// the user to log in again.
 const globalStore = globalThis as unknown as {
   __oauthStateStore?: Map<string, NodeSavedState>;
   __oauthSessionStore?: Map<string, NodeSavedSession>;
@@ -58,10 +63,26 @@ export function getOAuthStoredTokens(sub: string): {
   };
 }
 
+export class OAuthSessionExpiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OAuthSessionExpiredError";
+  }
+}
+
 export async function createOAuthAgent(sub: string): Promise<Agent> {
   const oauthClient = getOAuthClient();
-  const oauthSession = await oauthClient.restore(sub, "auto");
-  return new Agent(oauthSession);
+  try {
+    const oauthSession = await oauthClient.restore(sub, "auto");
+    return new Agent(oauthSession);
+  } catch (error) {
+    // Remove the stale session file so future logins start fresh
+    sessionStore.del(sub);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new OAuthSessionExpiredError(
+      `OAuth session expired or revoked: ${message}`
+    );
+  }
 }
 
 export function getOAuthClient(): NodeOAuthClient {
