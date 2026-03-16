@@ -8,6 +8,7 @@ import {
 } from "@/lib/bluesky";
 import { createOAuthAgent, getOAuthStoredTokens, OAuthSessionExpiredError } from "@/lib/oauth-client";
 import { restoreOAuthSession } from "@/lib/blobs-store";
+import { processBookImageForBluesky } from "@/lib/image-processor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -177,9 +178,19 @@ export async function POST(request: NextRequest) {
           const contentType = imageResponse.headers.get("content-type") ?? "";
           if (contentType.startsWith("image/")) {
             const imageBuffer = await imageResponse.arrayBuffer();
-            const uploaded = await agent.uploadBlob(new Uint8Array(imageBuffer), {
-              encoding: contentType,
-            });
+            
+            // Process the book image: add background and optimize quality
+            const processedImage = await processBookImageForBluesky(
+              Buffer.from(imageBuffer),
+              contentType
+            );
+            
+            const uploaded = await agent.uploadBlob(
+              new Uint8Array(processedImage.buffer),
+              {
+                encoding: processedImage.contentType,
+              }
+            );
             imageBlob = uploaded.data.blob;
           }
         }
