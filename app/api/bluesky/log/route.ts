@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
 
     // 投稿用の画像（フロント側で生成された合成画像、またはフォールバック）
     let compositeImageBlob: { ref: { $link: string }; mimeType: string; size: number } | undefined;
-    
+
     // フロント側から compositeImageBase64 が送られた場合はそれを使用
     if (compositeImageBase64 && typeof compositeImageBase64 === "string") {
       try {
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-        
+
         const uploaded = await agent.uploadBlob(bytes, {
           encoding: "image/png",
         });
