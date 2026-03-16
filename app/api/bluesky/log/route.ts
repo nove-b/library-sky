@@ -7,7 +7,6 @@ import {
   refreshSession,
 } from "@/lib/bluesky";
 import { createOAuthAgent, getOAuthStoredTokens, OAuthSessionExpiredError } from "@/lib/oauth-client";
-import { generateCompositeImage } from "@/lib/image-compositor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +36,7 @@ function decodeDidFromJwt(accessJwt: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accessJwt, refreshJwt, did, book, status, rating, comment, service, handle } =
+    const { accessJwt, refreshJwt, did, book, status, rating, comment, service, handle, compositeImageBase64 } =
       body ?? {};
 
     let effectiveAccessJwt =
@@ -180,22 +179,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 投稿用の画像を生成（書影をリサイズ）
+    // 投稿用の画像（フロント側で生成された合成画像、またはフォールバック）
     let compositeImageBlob: { ref: { $link: string }; mimeType: string; size: number } | undefined;
-    if ((book as Book).imageUrl) {
+    
+    // フロント側から compositeImageBase64 が送られた場合はそれを使用
+    if (compositeImageBase64 && typeof compositeImageBase64 === "string") {
       try {
-        const compositeBuffer = await generateCompositeImage({
-          imageUrl: (book as Book).imageUrl,
-        });
-        const uploaded = await agent.uploadBlob(new Uint8Array(compositeBuffer), {
+        // base64 から Uint8Array に変換
+        const base64Data = compositeImageBase64.split(",")[1] || compositeImageBase64;
+        const binaryString = Buffer.from(base64Data, "base64").toString("binary");
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const uploaded = await agent.uploadBlob(bytes, {
           encoding: "image/png",
         });
         compositeImageBlob = uploaded.data.blob;
       } catch (error) {
-        console.warn("[POST] Failed to generate/upload composite image:", error);
-        // Fallback to original image if composite generation fails
+        console.warn("[POST] Failed to upload composite image from client:", error);
+        // Fallback to original image if upload fails
         compositeImageBlob = originalImageBlob;
       }
+    } else if ((book as Book).imageUrl) {
+      // フロント側で合成画像が生成されなかった場合は元画像を使用
+      compositeImageBlob = originalImageBlob;
     }
 
     const recordResponse = await agent.com.atproto.repo.createRecord({

@@ -17,6 +17,156 @@ interface LogComposerProps {
   session: BlueskySession | null;
 }
 
+/**
+ * Generate composite image with title on left and book cover on right using Canvas API
+ */
+async function generateCompositeImage(
+  title: string,
+  author: string,
+  imageUrl: string,
+  width = 1200,
+  height = 630
+): Promise<Blob> {
+  // Create canvas
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to get canvas context");
+
+  // Draw white background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  // Calculate dimensions
+  const coverHeight = height;
+  const coverWidth = Math.floor((coverHeight * 2) / 3);
+  const textWidth = width - coverWidth - 40;
+
+  // Draw title
+  ctx.fillStyle = "#1a1a1a";
+  ctx.font = "bold 48px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  
+  const maxTitleChars = 40;
+  const displayTitle = title.length > maxTitleChars
+    ? title.substring(0, maxTitleChars) + "..."
+    : title;
+  
+  const titleLines = wrapText(ctx, displayTitle, textWidth - 40, 48);
+  let yOffset = 80;
+  titleLines.forEach((line) => {
+    ctx.fillText(line, 20, yOffset);
+    yOffset += 60;
+  });
+
+  // Draw author
+  const maxAuthorChars = 20;
+  const displayAuthor = author.length > maxAuthorChars
+    ? author.substring(0, maxAuthorChars) + "..."
+    : author;
+  
+  ctx.fillStyle = "#666";
+  ctx.font = "32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.fillText(displayAuthor, 20, yOffset + 40);
+
+  // Draw footer
+  ctx.fillStyle = "#999";
+  ctx.font = "20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  ctx.fillText("library-sky", 20, height - 30);
+
+  // Load and draw cover image
+  const coverImage = await loadImage(imageUrl);
+  const offscreenCanvas = document.createElement("canvas");
+  offscreenCanvas.width = coverWidth;
+  offscreenCanvas.height = coverHeight;
+  const offCtx = offscreenCanvas.getContext("2d");
+  if (!offCtx) throw new Error("Failed to get offscreen canvas context");
+
+  const imgAspect = coverImage.naturalWidth / coverImage.naturalHeight;
+  const targetAspect = 2 / 3;
+
+  let sx = 0, sy = 0, sw = coverImage.naturalWidth, sh = coverImage.naturalHeight;
+
+  if (imgAspect > targetAspect) {
+    sw = coverImage.naturalHeight * targetAspect;
+    sx = (coverImage.naturalWidth - sw) / 2;
+  } else {
+    sh = coverImage.naturalWidth / targetAspect;
+    sy = (coverImage.naturalHeight - sh) / 2;
+  }
+
+  offCtx.drawImage(coverImage, sx, sy, sw, sh, 0, 0, coverWidth, coverHeight);
+  ctx.drawImage(offscreenCanvas, width - coverWidth - 20, 0);
+
+  // Convert canvas to blob
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Failed to create blob from canvas"));
+    }, "image/png");
+  });
+}
+
+/**
+ * Helper function to wrap text
+ */
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  fontSize: number
+): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  words.forEach((word) => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const metrics = ctx.measureText(testLine);
+
+    if (metrics.width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
+/**
+ * Load image from URL
+ */
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement("img");
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+    img.crossOrigin = "anonymous";
+    img.src = url;
+  });
+}
+
+/**
+ * Convert Blob to Base64 string
+ */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result);
+    };
+    reader.onerror = () => reject(new Error("Failed to read blob"));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function LogComposer({ session }: LogComposerProps) {
   const [status, setStatus] = useState<ReadingStatus>("reading");
   const [rating, setRating] = useState(4);
@@ -82,6 +232,22 @@ export default function LogComposer({ session }: LogComposerProps) {
         asin: `manual-${Date.now()}`,
       };
 
+      // Generate composite image on client side
+      let compositeImageBase64: string | undefined;
+      if (imageUrl.trim()) {
+        try {
+          const compositeBlob = await generateCompositeImage(
+            title.trim(),
+            author.trim(),
+            imageUrl.trim()
+          );
+          compositeImageBase64 = await blobToBase64(compositeBlob);
+        } catch (compositeError) {
+          console.warn("[LogComposer] Failed to generate composite image:", compositeError);
+          // Continue without composite image - API will handle it
+        }
+      }
+
       const response = await fetch("/api/bluesky/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,6 +261,7 @@ export default function LogComposer({ session }: LogComposerProps) {
           rating,
           comment,
           service: session.service,
+          compositeImageBase64,
         }),
       });
 
