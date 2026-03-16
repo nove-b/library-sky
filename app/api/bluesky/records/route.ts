@@ -119,8 +119,8 @@ function parseBookLogFromPost(post: BlueskyPost): ExtractedBookLog | null {
   const ratingMatch = text.match(/⭐/g);
   const rating = ratingMatch ? ratingMatch.length : 0;
 
-  // Amazon URL が facets に含まれている可能性があるため、text から抽出
   // 画像URLを抽出（embedから取得）
+  // Note: embed からの画像はコンポジット画像なので、あとでLexiconレコードから上書きされる
   let imageUrl = "";
   const embedRecord = post.embed as Record<string, unknown>;
   const embedImages = embedRecord?.images;
@@ -130,7 +130,7 @@ function parseBookLogFromPost(post: BlueskyPost): ExtractedBookLog | null {
     const thumb = firstImage?.thumb;
     if (typeof fullsize === "string" || typeof thumb === "string") {
       imageUrl = (typeof fullsize === "string" ? fullsize : "") || (typeof thumb === "string" ? thumb : "");
-      console.log('[DEBUG] imageUrl from embed:', imageUrl);
+      console.log('[DEBUG] imageUrl from embed (composite):', imageUrl);
     }
   }
 
@@ -197,6 +197,7 @@ export async function GET(request: NextRequest) {
         collection: COLLECTION,
         limit: 100,
       });
+      console.log('[DEBUG] Raw records from listRecords:', JSON.stringify(recordResponse.data.records?.slice(0, 2), null, 2));
       for (const record of recordResponse.data.records ?? []) {
         recordMap.set(record.uri, record.value);
         recordMap.set((record.uri as string).split('/').pop() || '', record.value);
@@ -255,9 +256,16 @@ export async function GET(request: NextRequest) {
 
         if (record && typeof record === 'object') {
           const typedRecord = record as Record<string, unknown>;
-          if (typeof typedRecord.imageUrl === 'string' && !parsed.imageUrl) {
-            parsed.imageUrl = typedRecord.imageUrl;
-            console.log('[DEBUG] imageUrl from record:', typedRecord.imageUrl);
+          // Lexicon レコード側の元画像URLを優先して、embed のコンポジット画像を上書き
+          const originalImageUrl =
+            typeof typedRecord.originalImageUrl === 'string'
+              ? typedRecord.originalImageUrl
+              : typeof typedRecord.imageUrl === 'string'
+                ? typedRecord.imageUrl
+                : '';
+          if (originalImageUrl) {
+            parsed.imageUrl = originalImageUrl;
+            console.log('[DEBUG] imageUrl from Lexicon record (original):', originalImageUrl);
           }
           if (typeof typedRecord.title === 'string') {
             parsed.title = typedRecord.title;

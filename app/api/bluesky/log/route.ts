@@ -214,7 +214,9 @@ export async function POST(request: NextRequest) {
         $type: COLLECTION,
         title: (book as Book).title,
         author: (book as Book).author,
+        // Keep both keys for lexicon compatibility across older/newer records.
         imageUrl: (book as Book).imageUrl,
+        originalImageUrl: (book as Book).imageUrl,
         status,
         rating,
         comment: typeof comment === "string" ? comment : "",
@@ -304,6 +306,7 @@ export async function POST(request: NextRequest) {
       success: true,
       recordUri,
       postUri: postResponse.data.uri,
+      originalImageUrl: (book as Book).imageUrl,
     });
   } catch (error) {
     console.error("Failed to post to Bluesky:", error);

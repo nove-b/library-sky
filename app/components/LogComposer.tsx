@@ -24,57 +24,135 @@ async function generateCompositeImage(
   title: string,
   author: string,
   imageUrl: string,
-  width = 1200,
-  height = 630
+  status: ReadingStatus,
+  width = 1080,
+  height = 567
 ): Promise<Blob> {
-  // Create canvas
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Failed to get canvas context");
 
-  // Draw white background
-  ctx.fillStyle = "#ffffff";
+  const safeTitle = title.trim() || "Untitled";
+  const safeAuthor = author.trim() || "Unknown Author";
+
+  const padding = 42;
+  const panelRadius = 28;
+  const coverHeight = Math.floor((height - padding * 2) * 0.84);
+  const coverWidth = Math.floor((coverHeight * 2) / 3);
+  const coverRightInset = 20;
+  const coverY = Math.floor((height - coverHeight) / 2);
+  const coverX = width - padding - coverRightInset - coverWidth;
+  const textAreaX = padding + 18;
+  const textAreaY = padding + 44;
+  const textWidth = coverX - textAreaX - 36;
+
+  // Atmosphere with soft gradients.
+  const backgroundGradient = ctx.createLinearGradient(0, 0, width, height);
+  backgroundGradient.addColorStop(0, "#f8fafc");
+  backgroundGradient.addColorStop(0.55, "#eef7ff");
+  backgroundGradient.addColorStop(1, "#ecfeff");
+  ctx.fillStyle = backgroundGradient;
   ctx.fillRect(0, 0, width, height);
 
-  // Calculate dimensions
-  const coverHeight = height;
-  const coverWidth = Math.floor((coverHeight * 2) / 3);
-  const textWidth = width - coverWidth - 40;
+  const glowLeft = ctx.createRadialGradient(170, 110, 20, 170, 110, 280);
+  glowLeft.addColorStop(0, "rgba(56, 189, 248, 0.3)");
+  glowLeft.addColorStop(1, "rgba(56, 189, 248, 0)");
+  ctx.fillStyle = glowLeft;
+  ctx.fillRect(0, 0, width, height);
 
-  // Draw title
-  ctx.fillStyle = "#1a1a1a";
-  ctx.font = "bold 48px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-  
-  const maxTitleChars = 40;
-  const displayTitle = title.length > maxTitleChars
-    ? title.substring(0, maxTitleChars) + "..."
-    : title;
-  
-  const titleLines = wrapText(ctx, displayTitle, textWidth - 40, 48);
-  let yOffset = 80;
+  const glowRight = ctx.createRadialGradient(width - 120, height - 130, 30, width - 120, height - 130, 290);
+  glowRight.addColorStop(0, "rgba(16, 185, 129, 0.24)");
+  glowRight.addColorStop(1, "rgba(16, 185, 129, 0)");
+  ctx.fillStyle = glowRight;
+  ctx.fillRect(0, 0, width, height);
+
+  // Main content panel.
+  drawRoundedRect(ctx, padding, padding, width - padding * 2, height - padding * 2, panelRadius);
+  const panelGradient = ctx.createLinearGradient(padding, padding, padding, height - padding);
+  panelGradient.addColorStop(0, "rgba(255, 255, 255, 0.92)");
+  panelGradient.addColorStop(1, "rgba(255, 255, 255, 0.8)");
+  ctx.fillStyle = panelGradient;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.3)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Header badge.
+  const badgeText = "library-sky";
+  ctx.font = "600 18px 'Avenir Next', 'Hiragino Sans', 'Noto Sans JP', sans-serif";
+  const badgeWidth = ctx.measureText(badgeText).width + 30;
+  const badgeX = textAreaX;
+  const badgeY = padding + 18;
+  drawRoundedRect(ctx, badgeX, badgeY, badgeWidth, 34, 17);
+  ctx.fillStyle = "rgba(14, 165, 233, 0.12)";
+  ctx.fill();
+  ctx.fillStyle = "#0369a1";
+  ctx.textBaseline = "middle";
+  ctx.fillText(badgeText, badgeX + 15, badgeY + 17);
+
+  // Title block.
+  ctx.fillStyle = "#0f172a";
+  ctx.textBaseline = "top";
+  ctx.font = "700 56px 'Avenir Next', 'Hiragino Sans', 'Noto Sans JP', sans-serif";
+  const titleLines = clampTextLines(ctx, wrapText(ctx, safeTitle, textWidth), 3, textWidth);
+  let yOffset = textAreaY + 26;
   titleLines.forEach((line) => {
-    ctx.fillText(line, 20, yOffset);
-    yOffset += 60;
+    ctx.fillText(line, textAreaX, yOffset);
+    yOffset += 66;
   });
 
-  // Draw author
-  const maxAuthorChars = 20;
-  const displayAuthor = author.length > maxAuthorChars
-    ? author.substring(0, maxAuthorChars) + "..."
-    : author;
-  
-  ctx.fillStyle = "#666";
-  ctx.font = "32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-  ctx.fillText(displayAuthor, 20, yOffset + 40);
+  yOffset += 16;
+  ctx.fillStyle = "rgba(148, 163, 184, 0.6)";
+  ctx.fillRect(textAreaX, yOffset, textWidth - 20, 2);
+  yOffset += 22;
 
-  // Draw footer
-  ctx.fillStyle = "#999";
-  ctx.font = "20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-  ctx.fillText("library-sky", 20, height - 30);
+  ctx.fillStyle = "#334155";
+  ctx.font = "500 34px 'Avenir Next', 'Hiragino Sans', 'Noto Sans JP', sans-serif";
+  ctx.fillText(fitLineWithEllipsis(ctx, safeAuthor, textWidth), textAreaX, yOffset);
 
-  // Load and draw cover image
+  // Footer status badge.
+
+  const STATUS_LABELS: Record<ReadingStatus, string> = {
+    want: "読みたい",
+    reading: "読書中",
+    completed: "読了",
+    dropped: "中断",
+  };
+
+  const statusLabel = STATUS_LABELS[status];
+  const statusBadgeY = height - padding - 62;
+  const statusBadgeWidth = 150;
+  const statusBadgeHeight = 42;
+
+  drawRoundedRect(ctx, textAreaX, statusBadgeY, statusBadgeWidth, statusBadgeHeight, 21);
+  const statusBadgeGradient = ctx.createLinearGradient(
+    textAreaX,
+    statusBadgeY,
+    textAreaX + statusBadgeWidth,
+    statusBadgeY + statusBadgeHeight
+  );
+  statusBadgeGradient.addColorStop(0, "rgba(14, 165, 233, 0.14)");
+  statusBadgeGradient.addColorStop(1, "rgba(16, 185, 129, 0.14)");
+  ctx.fillStyle = statusBadgeGradient;
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.28)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = "#0284c7";
+  ctx.beginPath();
+  ctx.arc(textAreaX + 16, statusBadgeY + statusBadgeHeight / 2, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "600 20px 'Avenir Next', 'Hiragino Sans', 'Noto Sans JP', sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.fillText(statusLabel, textAreaX + 28, statusBadgeY + statusBadgeHeight / 2);
+
+  // Cover image: clipped to rounded rectangle with soft shadow.
   const coverImage = await loadImage(imageUrl);
   const offscreenCanvas = document.createElement("canvas");
   offscreenCanvas.width = coverWidth;
@@ -96,9 +174,27 @@ async function generateCompositeImage(
   }
 
   offCtx.drawImage(coverImage, sx, sy, sw, sh, 0, 0, coverWidth, coverHeight);
-  ctx.drawImage(offscreenCanvas, width - coverWidth - 20, 0);
 
-  // Convert canvas to blob
+  ctx.save();
+  ctx.shadowColor = "rgba(15, 23, 42, 0.28)";
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 18;
+  drawRoundedRect(ctx, coverX, coverY, coverWidth, coverHeight, 26);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  drawRoundedRect(ctx, coverX, coverY, coverWidth, coverHeight, 24);
+  ctx.clip();
+  ctx.drawImage(offscreenCanvas, coverX, coverY, coverWidth, coverHeight);
+  ctx.restore();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, coverX, coverY, coverWidth, coverHeight, 24);
+  ctx.stroke();
+
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
@@ -107,26 +203,84 @@ async function generateCompositeImage(
   });
 }
 
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+): void {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function fitLineWithEllipsis(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string {
+  if (ctx.measureText(text).width <= maxWidth) {
+    return text;
+  }
+
+  let trimmed = text;
+  while (trimmed.length > 0 && ctx.measureText(`${trimmed}...`).width > maxWidth) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  return `${trimmed}...`;
+}
+
+function clampTextLines(
+  ctx: CanvasRenderingContext2D,
+  lines: string[],
+  maxLines: number,
+  maxWidth: number
+): string[] {
+  if (lines.length <= maxLines) {
+    return lines;
+  }
+
+  const clamped = lines.slice(0, maxLines);
+  clamped[maxLines - 1] = fitLineWithEllipsis(ctx, clamped[maxLines - 1], maxWidth);
+  return clamped;
+}
+
 /**
  * Helper function to wrap text
  */
 function wrapText(
   ctx: CanvasRenderingContext2D,
   text: string,
-  maxWidth: number,
-  fontSize: number
+  maxWidth: number
 ): string[] {
-  const words = text.split(" ");
+  const content = text.trim();
+  if (!content) {
+    return [];
+  }
+
+  const hasSpaces = /\s/.test(content);
+  const units = hasSpaces ? content.split(/\s+/) : Array.from(content);
   const lines: string[] = [];
   let currentLine = "";
 
-  words.forEach((word) => {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
+  units.forEach((unit) => {
+    const testLine = currentLine
+      ? hasSpaces
+        ? `${currentLine} ${unit}`
+        : `${currentLine}${unit}`
+      : unit;
     const metrics = ctx.measureText(testLine);
 
     if (metrics.width > maxWidth && currentLine) {
       lines.push(currentLine);
-      currentLine = word;
+      currentLine = unit;
     } else {
       currentLine = testLine;
     }
@@ -148,7 +302,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
     img.crossOrigin = "anonymous";
-    img.src = url;
+    img.src = `/api/image-proxy?url=${encodeURIComponent(url)}`;
   });
 }
 
@@ -239,7 +393,8 @@ export default function LogComposer({ session }: LogComposerProps) {
           const compositeBlob = await generateCompositeImage(
             title.trim(),
             author.trim(),
-            imageUrl.trim()
+            imageUrl.trim(),
+            status.trim() as ReadingStatus
           );
           compositeImageBase64 = await blobToBase64(compositeBlob);
         } catch (compositeError) {
