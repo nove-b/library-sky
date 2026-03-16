@@ -7,6 +7,7 @@ import {
   refreshSession,
 } from "@/lib/bluesky";
 import { createOAuthAgent, getOAuthStoredTokens, OAuthSessionExpiredError } from "@/lib/oauth-client";
+import { restoreOAuthSession } from "@/lib/blobs-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,8 +59,16 @@ export async function POST(request: NextRequest) {
     if (oauthDid) {
       isOAuthSession = true;
       effectiveDid = effectiveDid || oauthDid;
-      const oauthTokens = getOAuthStoredTokens(oauthDid);
-      if (oauthTokens) {
+      let oauthTokens = getOAuthStoredTokens(oauthDid);
+      
+      // If tokens are not in global memory, try to restore from Blobs
+      if (!oauthTokens) {
+        const blobsSession = await restoreOAuthSession(oauthDid);
+        if (blobsSession) {
+          effectiveAccessJwt = blobsSession.accessJwt;
+          effectiveRefreshJwt = blobsSession.refreshJwt;
+        }
+      } else {
         effectiveAccessJwt = oauthTokens.accessJwt;
         effectiveRefreshJwt = oauthTokens.refreshJwt || effectiveRefreshJwt;
       }
@@ -318,8 +327,16 @@ export async function DELETE(request: NextRequest) {
     if (oauthDid) {
       isOAuthSession = true;
       effectiveDid = effectiveDid || oauthDid;
-      const oauthTokens = getOAuthStoredTokens(oauthDid);
-      if (oauthTokens) {
+      let oauthTokens = getOAuthStoredTokens(oauthDid);
+      
+      // If tokens are not in global memory, try to restore from Blobs
+      if (!oauthTokens) {
+        const blobsSession = await restoreOAuthSession(oauthDid);
+        if (blobsSession) {
+          effectiveAccessJwt = blobsSession.accessJwt;
+          effectiveRefreshJwt = blobsSession.refreshJwt;
+        }
+      } else {
         effectiveAccessJwt = oauthTokens.accessJwt;
         effectiveRefreshJwt = oauthTokens.refreshJwt || effectiveRefreshJwt;
       }

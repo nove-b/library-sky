@@ -56,6 +56,38 @@ export default function LayoutClient({ children }: LayoutClientProps) {
     const initialTheme = storedTheme === "dark" || (!storedTheme && prefersDark) ? "dark" : "light";
     setTheme(initialTheme);
     document.documentElement.classList.toggle("dark", initialTheme === "dark");
+
+    // Try to restore session from Blobs if no cookie-based session exists
+    const restoreSessionIfNeeded = async () => {
+      const stored = localStorage.getItem("library-sky-session");
+      if (stored) {
+        try {
+          const sessionData = JSON.parse(stored) as { did?: string };
+          if (sessionData.did) {
+            // Try to restore from Blobs
+            const response = await fetch("/api/bluesky/restore", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ did: sessionData.did }),
+            });
+
+            if (response.ok) {
+              const restoredSession = await response.json();
+              localStorage.setItem("library-sky-session", JSON.stringify(restoredSession));
+              window.dispatchEvent(new Event("library-sky-session-change"));
+            } else if (response.status === 401) {
+              // Session expired or not found in store
+              localStorage.removeItem("library-sky-session");
+              window.dispatchEvent(new Event("library-sky-session-change"));
+            }
+          }
+        } catch (error) {
+          console.warn("Failed to restore session:", error);
+        }
+      }
+    };
+
+    restoreSessionIfNeeded();
   }, []);
 
   useEffect(() => {

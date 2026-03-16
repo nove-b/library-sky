@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOAuthClient } from "@/lib/oauth-client";
+import { getOAuthClient, getOAuthStoredTokens } from "@/lib/oauth-client";
 import { createAgent } from "@/lib/bluesky";
+import { saveOAuthSession } from "@/lib/blobs-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,12 @@ export async function GET(request: NextRequest) {
     const { session } = await oauthClient.callback(params);
 
     const did = session.did;
+
+    // Get the OAuth tokens from the session store
+    const tokens = getOAuthStoredTokens(did);
+    if (!tokens) {
+      throw new Error("Failed to retrieve OAuth tokens after callback");
+    }
 
     // Fetch user profile details
     let handle: string = did;
@@ -71,17 +78,15 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(new URL("/", BASE_URL));
 
     // Store session data in httpOnly cookie
-    // The DID is stored so we can restore the OAuth session later via oauthClient.restore(did)
+    // Include actual OAuth tokens for client-side session restoration
     const sessionObject = {
       handle,
       did,
       displayName,
       avatarUrl,
       service,
-      // OAuth tokens are managed internally by oauthClient
-      // We use `did` to restore the session for API calls
-      accessJwt: `oauth:${did}`,
-      refreshJwt: `oauth:${did}`,
+      accessJwt: tokens.accessJwt,
+      refreshJwt: tokens.refreshJwt,
     };
 
     response.cookies.set("bsky_session", JSON.stringify(sessionObject), {
@@ -90,6 +95,12 @@ export async function GET(request: NextRequest) {
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
+    });
+
+    // Save the full session to Netlify Blobs for persistence across cold starts
+    await saveOAuthSession(did, {
+      ...sessionObject,
+      storedAt: Date.now(),
     });
 
     return response;
