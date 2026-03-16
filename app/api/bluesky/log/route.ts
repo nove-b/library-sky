@@ -7,7 +7,6 @@ import {
   refreshSession,
 } from "@/lib/bluesky";
 import { createOAuthAgent, getOAuthStoredTokens, OAuthSessionExpiredError } from "@/lib/oauth-client";
-import { generateCompositeImage } from "@/lib/image-compositor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -160,8 +159,8 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // 元画像用のblobを保存（カスタムLexicon用）
-    let originalImageBlob: { ref: { $link: string }; mimeType: string; size: number } | undefined;
+    // 画像をアップロード（独自Lexiconと投稿の両方で使用）
+    let imageBlob: { ref: { $link: string }; mimeType: string; size: number } | undefined;
     if ((book as Book).imageUrl) {
       try {
         const imageResponse = await fetch((book as Book).imageUrl);
@@ -172,31 +171,11 @@ export async function POST(request: NextRequest) {
             const uploaded = await agent.uploadBlob(new Uint8Array(imageBuffer), {
               encoding: contentType,
             });
-            originalImageBlob = uploaded.data.blob;
+            imageBlob = uploaded.data.blob;
           }
         }
       } catch (error) {
-        console.warn("[POST] Failed to upload original image:", error);
-      }
-    }
-
-    // 投稿用の合成画像を生成（タイトル + 書影）
-    let compositeImageBlob: { ref: { $link: string }; mimeType: string; size: number } | undefined;
-    if ((book as Book).imageUrl) {
-      try {
-        const compositeBuffer = await generateCompositeImage({
-          title: (book as Book).title,
-          author: (book as Book).author,
-          imageUrl: (book as Book).imageUrl,
-        });
-        const uploaded = await agent.uploadBlob(new Uint8Array(compositeBuffer), {
-          encoding: "image/png",
-        });
-        compositeImageBlob = uploaded.data.blob;
-      } catch (error) {
-        console.warn("[POST] Failed to generate/upload composite image:", error);
-        // Fallback to original image if composite generation fails
-        compositeImageBlob = originalImageBlob;
+        console.warn("[POST] Failed to upload image:", error);
       }
     }
 
@@ -268,14 +247,14 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // 既にアップロードされた合成画像blobを使用して埋め込みを作成
-    const imageEmbed = compositeImageBlob
+    // 既にアップロードされた画像blobを使用して埋め込みを作成
+    const imageEmbed = imageBlob
       ? {
         $type: "app.bsky.embed.images",
         images: [
           {
-            image: compositeImageBlob,
-            alt: `${(book as Book).title} - library-sky`,
+            image: imageBlob,
+            alt: `${(book as Book).title} の書影`,
           },
         ],
       }
