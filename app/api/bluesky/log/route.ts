@@ -180,13 +180,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 投稿用の合成画像を生成（タイトル + 書影）
+    // 投稿用の画像を生成（書影をリサイズ）
     let compositeImageBlob: { ref: { $link: string }; mimeType: string; size: number } | undefined;
     if ((book as Book).imageUrl) {
       try {
         const compositeBuffer = await generateCompositeImage({
-          title: (book as Book).title,
-          author: (book as Book).author,
           imageUrl: (book as Book).imageUrl,
         });
         const uploaded = await agent.uploadBlob(new Uint8Array(compositeBuffer), {
