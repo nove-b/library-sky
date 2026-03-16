@@ -1,10 +1,11 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession, Book, ReadingStatus } from "@/lib/types";
+import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
 
 const statusOptions: { value: ReadingStatus; label: string }[] = [
   { value: "want", label: "読みたい" },
@@ -31,6 +32,32 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [isPosting, setIsPosting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
+
+  // Load draft from localStorage on component mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setTitle(draft.title);
+      setAuthor(draft.author);
+      setComment(draft.comment);
+      setStatus(draft.status);
+      setRating(draft.rating);
+      setImageUrl(draft.imageUrl);
+    }
+  }, []);
+
+  // Auto-save draft to localStorage on any form field change
+  useEffect(() => {
+    const draft = {
+      title,
+      author,
+      comment,
+      status,
+      rating,
+      imageUrl,
+    };
+    saveDraft(draft);
+  }, [title, author, comment, status, rating, imageUrl]);
 
   const handleSearch = async () => {
     if (!title.trim()) {
@@ -100,6 +127,8 @@ export default function LogComposer({ session }: LogComposerProps) {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
+          // Save draft before session expires so user can recover it after re-login
+          saveDraft({ title, author, comment, status, rating, imageUrl });
           window.dispatchEvent(new Event("library-sky-session-expired"));
           return;
         }
@@ -130,6 +159,8 @@ export default function LogComposer({ session }: LogComposerProps) {
         setPostedLogUrl(detailUrl);
       }
 
+      // Clear draft after successful submission
+      clearDraft();
       setComment("");
       setNotice("Blueskyに投稿しました。");
     } catch (error) {
