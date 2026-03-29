@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
         title: (book as Book).title,
         author: (book as Book).author,
         imageUrl: (book as Book).imageUrl,
+        affiliateUrl: (book as Book).affiliateUrl || "",
         status,
         rating,
         comment: typeof comment === "string" ? comment : "",

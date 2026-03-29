@@ -3,129 +3,110 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const GOOGLE_BOOKS_API_KEY = process.env.GOOGLE_BOOKS_API_KEY;
-const GOOGLE_BOOKS_ENDPOINT = "https://www.googleapis.com/books/v1/volumes";
+const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID;
+const RAKUTEN_ACCESS_KEY = process.env.RAKUTEN_ACCESS_KEY;
+const RAKUTEN_AFFILIATE_ID = process.env.RAKUTEN_AFFILIATE_ID;
+const RAKUTEN_BOOKS_ENDPOINT =
+  "https://openapi.rakuten.co.jp/services/api/BooksBook/Search/20170404";
 
-interface GoogleBooksVolumeInfo {
+interface RakutenBookItem {
   title?: string;
-  authors?: string[];
-  publishedDate?: string;
-  imageLinks?: {
-    thumbnail?: string;
-    smallThumbnail?: string;
-  };
-  industryIdentifiers?: Array<{
-    type: string;
-    identifier: string;
-  }>;
-  infoLink?: string;
+  author?: string;
+  isbn?: string;
+  largeImageUrl?: string;
+  mediumImageUrl?: string;
+  smallImageUrl?: string;
+  itemUrl?: string;
+  affiliateUrl?: string;
+  itemPrice?: number;
+  publisherName?: string;
 }
 
-interface GoogleBooksSaleInfo {
-  listPrice?: {
-    amount?: number;
-    currencyCode?: string;
-  };
+interface RakutenBooksResponse {
+  Items?: Array<{ Item: RakutenBookItem }>;
+  count?: number;
+  hits?: number;
 }
 
-interface GoogleBooksItem {
-  id?: string;
-  volumeInfo?: GoogleBooksVolumeInfo;
-  saleInfo?: GoogleBooksSaleInfo;
-}
-
-interface GoogleBooksResponse {
-  items?: GoogleBooksItem[];
-}
-
-async function searchBooksOnGoogle(query: string) {
-  // タイトルに特化した検索クエリを作成
-  const searchQuery = `intitle:${query}`;
-
+async function searchBooksOnRakuten(query: string) {
   const params = new URLSearchParams({
-    q: searchQuery,
-    maxResults: "20",
-    langRestrict: "ja",
-    orderBy: "relevance",
-    printType: "books",
+    applicationId: RAKUTEN_APP_ID || "",
+    accessKey: RAKUTEN_ACCESS_KEY || "",
+    title: query,
+    hits: "20",
+    format: "json",
   });
 
-  if (GOOGLE_BOOKS_API_KEY) {
-    params.set("key", GOOGLE_BOOKS_API_KEY);
+  if (RAKUTEN_AFFILIATE_ID) {
+    params.set("affiliateId", RAKUTEN_AFFILIATE_ID);
   }
 
-  const response = await fetch(`${GOOGLE_BOOKS_ENDPOINT}?${params.toString()}`);
+  const rakutenOrigin = "https://library-sky.com";
+
+  const response = await fetch(
+    `${RAKUTEN_BOOKS_ENDPOINT}?${params.toString()}`,
+    {
+      headers: {
+        Origin: rakutenOrigin,
+        Referer: `${rakutenOrigin}/`,
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Google Books API responded with status ${response.status}: ${errorText}`);
+    throw new Error(
+      `楽天ブックスAPI responded with status ${response.status}: ${errorText}`
+    );
   }
 
-  const data: GoogleBooksResponse = await response.json();
-  return parseGoogleBooksResponse(data);
+  const data: RakutenBooksResponse = await response.json();
+  return parseRakutenBooksResponse(data);
 }
 
-function parseGoogleBooksResponse(data: GoogleBooksResponse) {
-  const sourceItems = data.items ?? [];
-  const items = sourceItems.map((item, index) => {
-    const volumeInfo = item.volumeInfo || {};
-    const saleInfo = item.saleInfo || {};
+function parseRakutenBooksResponse(data: RakutenBooksResponse) {
+  const sourceItems = data.Items ?? [];
 
-    const title = volumeInfo.title || "Unknown";
-    const authors = volumeInfo.authors || [];
-    const author = authors.length > 0 ? authors.join(", ") : "Unknown";
+  const sanitizeImageUrl = (url: string) => url.replace(/\?_ex=\d+x\d+$/, "");
 
-    const identifiers = volumeInfo.industryIdentifiers || [];
-    const isbn13 = identifiers.find(id => id.type === "ISBN_13")?.identifier;
-    const isbn10 = identifiers.find(id => id.type === "ISBN_10")?.identifier;
-    const isbn = isbn13 || isbn10;
-    const displayTitle = title;
-    const asin = isbn || item.id || `google-books-${index}`;
-    const isbnBased = !!isbn;
+  const items = sourceItems.map((entry, index) => {
+    const item = entry.Item;
 
-    const imageUrl = volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || "";
+    const title = item.title || "Unknown";
+    const author = item.author || "Unknown";
+    const asin = item.isbn || `rakuten-books-${index}`;
+    const affiliateUrl = item.affiliateUrl || item.itemUrl || "";
 
-    const price = saleInfo.listPrice?.amount
-      ? `¥${saleInfo.listPrice.amount.toLocaleString("ja-JP")}`
+    const imageUrl = sanitizeImageUrl(
+      item.largeImageUrl || item.mediumImageUrl || item.smallImageUrl || ""
+    );
+
+    const price = item.itemPrice
+      ? `¥${item.itemPrice.toLocaleString("ja-JP")}`
       : "";
 
-    return {
-      title: displayTitle,
-      asin,
-      price,
-      imageUrl: imageUrl.replace("http://", "https://"),
-      author,
-      isbnBased,
-    };
+    return { title, asin, price, imageUrl, author, affiliateUrl };
   });
 
   // タイトルを正規化（句読点と余白を削除）して重複判定
-  const normalizeTitle = (t: string) => t.replace(/[！!?？\s　]/g, "").toLowerCase();
+  const normalizeTitle = (t: string) =>
+    t.replace(/[！!?？\s　]/g, "").toLowerCase();
 
-  const titleGroups = new Map<string, typeof items>();
+  const seen = new Set<string>();
+  const dedupedItems: typeof items = [];
   for (const item of items) {
     const normalized = normalizeTitle(item.title);
-    if (!titleGroups.has(normalized)) {
-      titleGroups.set(normalized, []);
-    }
-    titleGroups.get(normalized)!.push(item);
-  }
-
-  const dedupedItems: Omit<(typeof items)[0], "isbnBased">[] = [];
-  for (const group of titleGroups.values()) {
-    if (group.length > 1) {
-      // 複数がある場合、ISBN 版を優先して、最初の1つだけを採用
-      const withIsbn = group.filter(item => item.isbnBased);
-      const itemToAdd = withIsbn.length > 0 ? withIsbn[0] : group[0];
-      const { isbnBased, ...item } = itemToAdd;
-      dedupedItems.push(item);
-    } else {
-      const { isbnBased, ...item } = group[0];
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
       dedupedItems.push(item);
     }
   }
 
-  return { success: dedupedItems.length > 0, count: dedupedItems.length, items: dedupedItems };
+  return {
+    success: dedupedItems.length > 0,
+    count: dedupedItems.length,
+    items: dedupedItems,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -140,13 +121,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const results = await searchBooksOnGoogle(query);
+    const results = await searchBooksOnRakuten(query);
     return NextResponse.json(results);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch books from Google Books API.";
-    return NextResponse.json(
-      { error: message },
-      { status: 502 }
-    );
+    const message =
+      error instanceof Error
+        ? error.message
+        : "楽天ブックスAPIからの取得に失敗しました。";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }
