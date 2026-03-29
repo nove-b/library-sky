@@ -7,9 +7,14 @@ export default function Footer() {
     <footer className="border-t border-stone-200 bg-white/50 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/50">
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-6 sm:px-10">
         {/* Copyright */}
-        <p className="text-xs text-stone-600 dark:text-stone-400">
-          © {currentYear} Library Sky. All rights reserved.
-        </p>
+        <div className="text-xs">
+          {/* <!-- Rakuten Web Services Attribution Snippet FROM HERE --> */}
+          <a href="https://developers.rakuten.com/" target="_blank">Supported by Rakuten Developers</a>
+          {/* <!-- Rakuten Web Services Attribution Snippet TO HERE --> */}
+          <p className="text-stone-600 dark:text-stone-400">
+            © {currentYear} Library Sky. All rights reserved.
+          </p>
+        </div>
 
         {/* Social Links */}
         <div className="flex items-center gap-4">

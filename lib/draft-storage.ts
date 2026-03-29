@@ -7,6 +7,7 @@ export interface PostDraft {
   status: ReadingStatus;
   rating: number;
   imageUrl: string;
+  affiliateUrl: string;
 }
 
 const DRAFT_STORAGE_KEY = "library-sky-draft";

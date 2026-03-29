@@ -152,6 +152,7 @@ function parseBookLogFromPost(post: BlueskyPost): ExtractedBookLog | null {
     title,
     author,
     imageUrl,
+    affiliateUrl: "",
     status: finalStatus,
     rating: Math.min(rating, 5),
     comment,
@@ -258,6 +259,9 @@ export async function GET(request: NextRequest) {
           if (typeof typedRecord.imageUrl === 'string' && !parsed.imageUrl) {
             parsed.imageUrl = typedRecord.imageUrl;
             console.log('[DEBUG] imageUrl from record:', typedRecord.imageUrl);
+          }
+          if (typeof typedRecord.affiliateUrl === 'string') {
+            parsed.affiliateUrl = typedRecord.affiliateUrl;
           }
           if (typeof typedRecord.title === 'string') {
             parsed.title = typedRecord.title;

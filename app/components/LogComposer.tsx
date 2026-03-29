@@ -25,6 +25,7 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [affiliateUrl, setAffiliateUrl] = useState("");
   const [searchResults, setSearchResults] = useState<Book[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [isPosting, setIsPosting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
+  const [selectedAsin, setSelectedAsin] = useState<string | null>(null);
 
   // Load draft from localStorage on component mount
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function LogComposer({ session }: LogComposerProps) {
       setStatus(draft.status);
       setRating(draft.rating);
       setImageUrl(draft.imageUrl);
+      setAffiliateUrl(draft.affiliateUrl ?? "");
     }
   }, []);
 
@@ -55,9 +58,10 @@ export default function LogComposer({ session }: LogComposerProps) {
       status,
       rating,
       imageUrl,
+      affiliateUrl,
     };
     saveDraft(draft);
-  }, [title, author, comment, status, rating, imageUrl]);
+  }, [title, author, comment, status, rating, imageUrl, affiliateUrl]);
 
   const handleSearch = async () => {
     if (!title.trim()) {
@@ -68,6 +72,8 @@ export default function LogComposer({ session }: LogComposerProps) {
     setIsSearching(true);
     setSearchError(null);
     setHasSearched(false);
+    setSelectedAsin(null);
+    setAffiliateUrl("");
 
     try {
       const response = await fetch(
@@ -107,6 +113,7 @@ export default function LogComposer({ session }: LogComposerProps) {
         author: author.trim(),
         imageUrl: imageUrl.trim(),
         asin: `manual-${Date.now()}`,
+        affiliateUrl: affiliateUrl.trim() || undefined,
       };
 
       const response = await fetch("/api/bluesky/log", {
@@ -128,7 +135,7 @@ export default function LogComposer({ session }: LogComposerProps) {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           // Save draft before session expires so user can recover it after re-login
-          saveDraft({ title, author, comment, status, rating, imageUrl });
+          saveDraft({ title, author, comment, status, rating, imageUrl, affiliateUrl });
           window.dispatchEvent(new Event("library-sky-session-expired"));
           return;
         }
@@ -198,7 +205,11 @@ export default function LogComposer({ session }: LogComposerProps) {
             <div className="flex gap-1.5">
               <input
                 value={title}
-                onChange={(event) => setTitle(event.target.value)}
+                onChange={(event) => {
+                  setTitle(event.target.value);
+                  setSelectedAsin(null);
+                  setAffiliateUrl("");
+                }}
                 placeholder="タイトルを入力"
                 className="mt-1 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
               />
@@ -239,9 +250,15 @@ export default function LogComposer({ session }: LogComposerProps) {
                   setTitle(result.title);
                   setAuthor(result.author);
                   setImageUrl(result.imageUrl);
+                  setAffiliateUrl(result.affiliateUrl || "");
                   setSearchResults([result]);
+                  setSelectedAsin(result.asin);
                 }}
-                className="flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:border-blue-700 dark:hover:bg-stone-700"
+                aria-pressed={selectedAsin === result.asin}
+                className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${selectedAsin === result.asin
+                  ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300 dark:border-blue-500 dark:bg-stone-700 dark:ring-blue-700"
+                  : "border-stone-200 bg-stone-50 hover:border-blue-300 hover:bg-blue-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:border-blue-700 dark:hover:bg-stone-700"
+                  }`}
               >
                 {result.imageUrl ? (
                   <img
@@ -258,7 +275,14 @@ export default function LogComposer({ session }: LogComposerProps) {
                   <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{result.title}</p>
                   <p className="text-xs text-stone-600 dark:text-stone-400">{result.author}</p>
                 </div>
-                <span className="text-xs font-medium text-blue-600 dark:text-blue-400">選択</span>
+                <span
+                  className={`text-xs font-medium ${selectedAsin === result.asin
+                    ? "text-blue-700 dark:text-blue-300"
+                    : "text-blue-600 dark:text-blue-400"
+                    }`}
+                >
+                  {selectedAsin === result.asin ? "選択中" : "選択"}
+                </span>
               </button>
             ))}
           </div>

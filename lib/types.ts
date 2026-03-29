@@ -6,6 +6,7 @@ export interface Book {
   imageUrl: string;
   price?: string;
   asin: string;
+  affiliateUrl?: string;
 }
 
 export interface BookLog {
@@ -14,6 +15,7 @@ export interface BookLog {
   title: string;
   author: string;
   imageUrl: string;
+  affiliateUrl?: string;
   status: ReadingStatus;
   rating: number;
   comment: string;

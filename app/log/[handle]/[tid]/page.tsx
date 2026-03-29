@@ -75,6 +75,9 @@ export default function BookLogDetailPage() {
               if (typeof record.comment === "string") {
                 foundLog.comment = record.comment;
               }
+              if (typeof record.affiliateUrl === "string") {
+                foundLog.affiliateUrl = record.affiliateUrl;
+              }
             }
           } catch (err) {
             console.warn("Failed to fetch full record:", err);
@@ -228,7 +231,7 @@ export default function BookLogDetailPage() {
         )}
 
         {/* External Links */}
-        <div className="flex items-center gap-4 border-t border-stone-200 pt-4 dark:border-stone-700">
+        <div className="flex flex-wrap items-center gap-4 border-t border-stone-200 pt-4 dark:border-stone-700">
           {/* Amazon Link */}
           <a
             href={`https://www.amazon.co.jp/s?k=${encodeURIComponent(`${log.title} ${log.author}`)}&tag=nove0822-22`}
@@ -238,21 +241,40 @@ export default function BookLogDetailPage() {
             title="Amazonで検索"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M.045 18.02c.072-.116.187-.124.348-.022 3.636 2.11 7.594 3.166 11.87 3.166 2.852 0 5.668-.533 8.447-1.595l.315-.14c.138-.06.234-.1.293-.13.226-.088.39-.046.525.13.12.174.09.336-.12.48-.256.19-.6.41-1.006.654-1.244.743-2.64 1.316-4.185 1.726-1.53.406-3.045.61-4.516.61-2.265 0-4.446-.433-6.538-1.304-2.032-.844-3.827-2.002-5.386-3.485-.11-.107-.127-.194-.052-.26zm15.273-11.28c.96-.85 2.11-1.277 3.455-1.277 1.615 0 2.83.565 3.65 1.687.815 1.113 1.222 2.755 1.222 4.912v6.85c0 .396-.045.658-.134.786-.09.126-.24.19-.455.19h-2.64c-.195 0-.348-.06-.447-.184-.1-.122-.148-.39-.148-.793v-.55c-.195.243-.51.524-.943.845-.435.326-1.025.613-1.77.87-.745.25-1.584.378-2.515.378-1.435 0-2.565-.383-3.395-1.15-.824-.765-1.237-1.765-1.237-2.998 0-1.355.455-2.37 1.365-3.043.91-.673 2.245-1.098 4.006-1.274l2.375-.236v-.55c0-.718-.17-1.238-.51-1.557-.34-.324-.87-.485-1.592-.485-.615 0-1.177.13-1.685.39-.51.26-.96.563-1.354.906-.22.195-.425.276-.615.243-.19-.03-.33-.162-.42-.39l-.764-1.56c-.07-.174-.06-.33.03-.478zm4.195 6.058l-1.318.158c-1.08.117-1.858.343-2.336.684-.477.34-.716.81-.716 1.413 0 .493.157.89.472 1.194.315.304.744.455 1.288.455.49 0 .93-.1 1.32-.303.39-.202.69-.458.896-.768.207-.31.31-.62.31-.93v-1.903z" />
+              <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
+              <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
             </svg>
             <span>Amazonで検索</span>
           </a>
+
+          {/* Rakuten Affiliate Link */}
+          {log.affiliateUrl ? (
+            <a
+              href={log.affiliateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-rose-700 transition hover:text-rose-900 dark:text-rose-500 dark:hover:text-rose-300"
+              title="楽天で見る"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
+                <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
+              </svg>
+              <span>楽天で見る</span>
+            </a>
+          ) : null}
 
           {/* Calil Link */}
           <a
             href={`https://calil.jp/search?q=${encodeURIComponent(`${log.title} ${log.author}`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-emerald-700 transition hover:text-emerald-900 dark:text-emerald-500 dark:hover:text-emerald-300"
+            className="flex items-center gap-2 text-sm text-[#2ab6e9] transition hover:text-[#1a8bb8] dark:text-[#1a8bb8] dark:hover:text-[#0d5a7a]"
             title="カーリルで検索"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
+              <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
             </svg>
             <span>カーリルで検索</span>
           </a>
