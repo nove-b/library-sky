@@ -370,7 +370,17 @@ export async function DELETE(request: NextRequest) {
 
     let agent: Agent;
     if (isOAuthSession) {
-      agent = await createOAuthAgent(currentUserDid);
+      try {
+        agent = await createOAuthAgent(currentUserDid);
+      } catch (error) {
+        if (error instanceof OAuthSessionExpiredError) {
+          return NextResponse.json(
+            { error: "Session has expired. Please log in again." },
+            { status: 401 }
+          );
+        }
+        throw error;
+      }
     } else {
       const credentialAgent = createAgent(DEFAULT_BSKY_SERVICE);
 
@@ -400,7 +410,6 @@ export async function DELETE(request: NextRequest) {
         collection,
         rkey,
       });
-      console.log(`[DELETE] Lexicon record deleted: ${rkey}`);
     } catch (recordError) {
       console.error("[DELETE] Lexicon record deletion failed:", recordError);
       // Continue to delete post even if record deletion fails
@@ -418,7 +427,6 @@ export async function DELETE(request: NextRequest) {
             collection: postCollection,
             rkey: postRkey,
           });
-          console.log(`[DELETE] Post deleted: ${postRkey}`);
         }
       } catch (postError) {
         console.error("[DELETE] Post deletion failed:", postError);
