@@ -23,6 +23,32 @@ export default function BookLogDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const resolveRakutenUrl = async (targetLog: BookLog): Promise<string> => {
+    if (targetLog.affiliateUrl) {
+      return targetLog.affiliateUrl;
+    }
+
+    if (targetLog.uri?.startsWith("at://")) {
+      try {
+        const response = await fetch(
+          `/api/bluesky/record?uri=${encodeURIComponent(targetLog.uri)}`
+        );
+
+        if (response.ok) {
+          const data: { record?: Record<string, unknown> } = await response.json();
+          const affiliateUrl = data.record?.affiliateUrl;
+          if (typeof affiliateUrl === "string" && affiliateUrl) {
+            return affiliateUrl;
+          }
+        }
+      } catch {
+        // Fall back to search URL when record fetch fails
+      }
+    }
+
+    return `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(`${targetLog.title} ${targetLog.author}`)}`;
+  };
+
   useEffect(() => {
     const fetchLog = async () => {
       try {
@@ -247,22 +273,22 @@ export default function BookLogDetailPage() {
             <span>Amazonで検索</span>
           </a>
 
-          {/* Rakuten Affiliate Link */}
-          {log.affiliateUrl ? (
-            <a
-              href={log.affiliateUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-rose-700 transition hover:text-rose-900 dark:text-rose-500 dark:hover:text-rose-300"
-              title="楽天で見る"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
-                <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
-              </svg>
-              <span>楽天で見る</span>
-            </a>
-          ) : null}
+          {/* Rakuten Link */}
+          <button
+            type="button"
+            onClick={async () => {
+              const rakutenUrl = await resolveRakutenUrl(log);
+              window.open(rakutenUrl, "_blank", "noopener,noreferrer");
+            }}
+            className="flex items-center gap-2 text-sm text-rose-700 transition hover:text-rose-900 dark:text-rose-500 dark:hover:text-rose-300"
+            title="楽天で見る"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
+              <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
+            </svg>
+            <span>楽天で見る</span>
+          </button>
 
           {/* Calil Link */}
           <a
