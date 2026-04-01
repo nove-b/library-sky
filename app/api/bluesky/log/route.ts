@@ -267,6 +267,7 @@ export async function POST(request: NextRequest) {
       record: {
         $type: "app.bsky.feed.post",
         text,
+        langs: ["ja"],
         facets,
         ...(imageEmbed ? { embed: imageEmbed } : {}),
         createdAt: now,
