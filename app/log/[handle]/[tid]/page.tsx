@@ -264,13 +264,13 @@ export default function BookLogDetailPage() {
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-sm text-amber-700 transition hover:text-amber-900 dark:text-amber-500 dark:hover:text-amber-300"
-            title="Amazonで検索"
+            title="Amazon"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
               <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
             </svg>
-            <span>Amazonで検索</span>
+            <span>Amazon</span>
           </a>
 
           {/* Rakuten Link */}
@@ -281,13 +281,13 @@ export default function BookLogDetailPage() {
               window.open(rakutenUrl, "_blank", "noopener,noreferrer");
             }}
             className="flex items-center gap-2 text-sm text-rose-700 transition hover:text-rose-900 dark:text-rose-500 dark:hover:text-rose-300"
-            title="楽天で見る"
+            title="楽天"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
               <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
             </svg>
-            <span>楽天で見る</span>
+            <span>楽天</span>
           </button>
 
           {/* Calil Link */}
@@ -296,13 +296,13 @@ export default function BookLogDetailPage() {
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-sm text-[#2ab6e9] transition hover:text-[#1a8bb8] dark:text-[#1a8bb8] dark:hover:text-[#0d5a7a]"
-            title="カーリルで検索"
+            title="カーリル"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
               <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
             </svg>
-            <span>カーリルで検索</span>
+            <span>カーリル</span>
           </a>
         </div>
 

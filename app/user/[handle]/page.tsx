@@ -575,13 +575,13 @@ export default function UserBooksPage() {
                                   window.open(`https://www.amazon.co.jp/s?k=${encodeURIComponent(`${book.title} ${book.author}`)}&tag=nove0822-22`, '_blank', 'noopener,noreferrer');
                                 }}
                                 className="flex items-center gap-1 text-xs text-amber-700 transition hover:text-amber-900 dark:text-amber-500 dark:hover:text-amber-300"
-                                title="Amazonで検索"
+                                title="Amazon"
                               >
                                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                                   <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
                                   <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
                                 </svg>
-                                <span>Amazonで検索</span>
+                                <span>Amazon</span>
                               </button>
 
                               {/* Rakuten Link */}
@@ -594,13 +594,13 @@ export default function UserBooksPage() {
                                   window.open(rakutenUrl, '_blank', 'noopener,noreferrer');
                                 }}
                                 className="flex items-center gap-1 text-xs text-rose-700 transition hover:text-rose-900 dark:text-rose-500 dark:hover:text-rose-300"
-                                title="楽天で見る"
+                                title="楽天"
                               >
                                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                                   <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
                                   <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
                                 </svg>
-                                <span>楽天で見る</span>
+                                <span>楽天</span>
                               </button>
 
                               {/* Calil Link */}
@@ -612,13 +612,13 @@ export default function UserBooksPage() {
                                   window.open(`https://calil.jp/search?q=${encodeURIComponent(`${book.title} ${book.author}`)}`, '_blank', 'noopener,noreferrer');
                                 }}
                                 className="flex items-center gap-1 text-xs text-[#2ab6e9] transition hover:text-[#1a8bb8] dark:text-[#1a8bb8] dark:hover:text-[#0d5a7a]"
-                                title="カーリルで検索"
+                                title="カーリル"
                               >
                                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                                   <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z" />
                                   <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" />
                                 </svg>
-                                <span>カーリルで検索</span>
+                                <span>カーリル</span>
                               </button>
                             </div>
 
