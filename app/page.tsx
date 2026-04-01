@@ -74,7 +74,7 @@ export default function Home() {
         </h1>
         <p className="text-sm text-stone-600 dark:text-stone-300">
           <BlueskyLink asLink={false} />にログインして、読書ログを手軽に記録。<br />
-          <BlueskyLink href="https://bsky.app/profile/did:plc:2atly2y5kfyjcj5zap6pv4wd/feed/aaaf7ciexzdpw">Bluesky</BlueskyLink>のFeedで他の人の投稿を眺めて、新しい本との出会いを。<br />
+          <BlueskyLink href="https://bsky.app/profile/did:plc:2atly2y5kfyjcj5zap6pv4wd/feed/LibrarySkyFeed">Bluesky</BlueskyLink>のFeedで他の人の投稿を眺めて、新しい本との出会いを。<br />
           マイページで自分のログを一覧でき、読書の軌跡がひと目で分かります。<br />
         </p>
 
