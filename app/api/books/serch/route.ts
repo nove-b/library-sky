@@ -26,16 +26,28 @@ interface RakutenBooksResponse {
   Items?: Array<{ Item: RakutenBookItem }>;
   count?: number;
   hits?: number;
+  page?: number;
+  pageCount?: number;
 }
 
-async function searchBooksOnRakuten(query: string) {
+async function fetchFromRakuten(
+  searchField: "title" | "keyword",
+  query: string,
+  page: number,
+  author?: string,
+  publisher?: string
+): Promise<RakutenBooksResponse> {
   const params = new URLSearchParams({
     applicationId: RAKUTEN_APP_ID || "",
     accessKey: RAKUTEN_ACCESS_KEY || "",
-    title: query,
+    [searchField]: query,
     hits: "20",
+    page: String(page),
     format: "json",
   });
+
+  if (author) params.set("author", author);
+  if (publisher) params.set("publisherName", publisher);
 
   if (RAKUTEN_AFFILIATE_ID) {
     params.set("affiliateId", RAKUTEN_AFFILIATE_ID);
@@ -60,12 +72,25 @@ async function searchBooksOnRakuten(query: string) {
     );
   }
 
-  const data: RakutenBooksResponse = await response.json();
-  return parseRakutenBooksResponse(data);
+  return response.json() as Promise<RakutenBooksResponse>;
 }
 
-function parseRakutenBooksResponse(data: RakutenBooksResponse) {
+async function searchBooksOnRakuten(query: string, page = 1, author?: string, publisher?: string) {
+  // title検索
+  const data = await fetchFromRakuten("title", query, page, author, publisher);
+
+  if ((data.Items ?? []).length > 0) {
+    return parseRakutenBooksResponse(data, page, false);
+  }
+
+  // 0件のときだけキーワード曖昧検索フォールバック
+  const fuzzyData = await fetchFromRakuten("keyword", query, page, author, publisher);
+  return parseRakutenBooksResponse(fuzzyData, page, true);
+}
+
+function parseRakutenBooksResponse(data: RakutenBooksResponse, page: number, isFuzzy: boolean) {
   const sourceItems = data.Items ?? [];
+  const pageCount = data.pageCount ?? 1;
 
   const sanitizeImageUrl = (url: string) => url.replace(/\?_ex=\d+x\d+$/, "");
 
@@ -74,8 +99,9 @@ function parseRakutenBooksResponse(data: RakutenBooksResponse) {
 
     const title = item.title || "Unknown";
     const author = item.author || "Unknown";
-    const asin = item.isbn || `rakuten-books-${index}`;
+    const asin = item.isbn || item.itemUrl || item.affiliateUrl || `rakuten-books-${page}-${index}`;
     const affiliateUrl = item.affiliateUrl || item.itemUrl || "";
+    const publisher = item.publisherName || undefined;
 
     const imageUrl = sanitizeImageUrl(
       item.largeImageUrl || item.mediumImageUrl || item.smallImageUrl || ""
@@ -85,7 +111,7 @@ function parseRakutenBooksResponse(data: RakutenBooksResponse) {
       ? `¥${item.itemPrice.toLocaleString("ja-JP")}`
       : "";
 
-    return { title, asin, price, imageUrl, author, affiliateUrl };
+    return { title, asin, price, imageUrl, author, affiliateUrl, publisher };
   });
 
   // タイトルを正規化（句読点と余白を削除）して重複判定
@@ -106,12 +132,19 @@ function parseRakutenBooksResponse(data: RakutenBooksResponse) {
     success: dedupedItems.length > 0,
     count: dedupedItems.length,
     items: dedupedItems,
+    currentPage: page,
+    hasMore: page < pageCount,
+    isFuzzy,
   };
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get("query");
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const fuzzy = searchParams.get("fuzzy") === "1";
+  const filterAuthor = searchParams.get("author")?.trim() || undefined;
+  const filterPublisher = searchParams.get("publisher")?.trim() || undefined;
 
   if (!query) {
     return NextResponse.json(
@@ -121,7 +154,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const results = await searchBooksOnRakuten(query);
+    let results;
+    if (fuzzy) {
+      // フロントから明示的なページネーション
+      const data = await fetchFromRakuten("keyword", query, page, filterAuthor, filterPublisher);
+      results = parseRakutenBooksResponse(data, page, true);
+    } else {
+      results = await searchBooksOnRakuten(query, page, filterAuthor, filterPublisher);
+    }
     return NextResponse.json(results);
   } catch (error) {
     const message =
