@@ -43,6 +43,7 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [notice, setNotice] = useState<string | null>(null);
   const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
   const [selectedAsin, setSelectedAsin] = useState<string | null>(null);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   // Load draft from localStorage on component mount
   useEffect(() => {
@@ -82,6 +83,7 @@ export default function LogComposer({ session }: LogComposerProps) {
     setSearchError(null);
     setHasSearched(false);
     setSelectedAsin(null);
+    setSelectedBook(null);
     setAffiliateUrl("");
     setSearchPage(1);
     setSearchHasMore(false);
@@ -145,7 +147,12 @@ export default function LogComposer({ session }: LogComposerProps) {
       return;
     }
 
-    if (!title.trim() || !author.trim()) {
+    const postTitle = selectedBook?.title ?? title.trim();
+    const postAuthor = selectedBook?.author ?? author.trim();
+    const postImageUrl = selectedBook?.imageUrl ?? imageUrl.trim();
+    const postAffiliateUrl = selectedBook?.affiliateUrl ?? affiliateUrl.trim();
+
+    if (!postTitle || !postAuthor) {
       setNotice("書籍名と著者名を入力してください。");
       return;
     }
@@ -155,11 +162,11 @@ export default function LogComposer({ session }: LogComposerProps) {
 
     try {
       const book: Book = {
-        title: title.trim(),
-        author: author.trim(),
-        imageUrl: imageUrl.trim(),
+        title: postTitle,
+        author: postAuthor,
+        imageUrl: postImageUrl,
         asin: `manual-${Date.now()}`,
-        affiliateUrl: affiliateUrl.trim() || undefined,
+        affiliateUrl: postAffiliateUrl || undefined,
       };
 
       const response = await fetch("/api/bluesky/log", {
@@ -254,6 +261,7 @@ export default function LogComposer({ session }: LogComposerProps) {
                 onChange={(event) => {
                   setTitle(event.target.value);
                   setSelectedAsin(null);
+                  setSelectedBook(null);
                   setAffiliateUrl("");
                 }}
                 placeholder="タイトルを入力"
@@ -315,13 +323,14 @@ export default function LogComposer({ session }: LogComposerProps) {
                     if (selectedAsin === result.asin) {
                       // 再クリックで未選択に戻す（書籍名は残す）
                       setSelectedAsin(null);
+                      setSelectedBook(null);
                       setAuthor("");
                       setImageUrl("");
                       setAffiliateUrl("");
                       setFilterAuthor("");
                       setFilterPublisher("");
                     } else {
-                      setTitle(result.title);
+                      setSelectedBook(result);
                       setAuthor(result.author);
                       setImageUrl(result.imageUrl);
                       setAffiliateUrl(result.affiliateUrl || "");
@@ -372,6 +381,33 @@ export default function LogComposer({ session }: LogComposerProps) {
               >
                 {isLoadingMore ? "読み込み中..." : "次の20件を表示"}
               </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {selectedBook ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/60 dark:bg-blue-950/30">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">選択中の本</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAsin(null);
+                  setSelectedBook(null);
+                  setAuthor("");
+                  setImageUrl("");
+                  setAffiliateUrl("");
+                }}
+                className="rounded px-2 py-0.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                aria-label="選択した本をリセット"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{selectedBook.title}</p>
+            <p className="text-xs text-stone-600 dark:text-stone-400">{selectedBook.author}</p>
+            {selectedBook.publisher ? (
+              <p className="text-xs text-stone-500 dark:text-stone-500">{selectedBook.publisher}</p>
             ) : null}
           </div>
         ) : null}
@@ -453,7 +489,7 @@ export default function LogComposer({ session }: LogComposerProps) {
 
         <button
           type="submit"
-          disabled={isPosting || !session}
+          disabled={isPosting || !session || !selectedBook}
           className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPosting ? "投稿中..." : (<><BlueskyLink asLink={false} className="inline-flex items-center gap-1 text-white" />に投稿</>)}
