@@ -30,6 +30,13 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFuzzySearch, setIsFuzzySearch] = useState(false);
+  const [filterAuthor, setFilterAuthor] = useState("");
+  const [filterPublisher, setFilterPublisher] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
@@ -74,21 +81,53 @@ export default function LogComposer({ session }: LogComposerProps) {
     setHasSearched(false);
     setSelectedAsin(null);
     setAffiliateUrl("");
+    setSearchPage(1);
+    setSearchHasMore(false);
+    setIsFuzzySearch(false);
+
+    const q = title.trim();
+    setSearchQuery(q);
+    const params = new URLSearchParams({ query: q, page: "1" });
+    if (filterAuthor.trim()) params.set("author", filterAuthor.trim());
+    if (filterPublisher.trim()) params.set("publisher", filterPublisher.trim());
 
     try {
-      const response = await fetch(
-        `/api/books/serch?query=${encodeURIComponent(title.trim())}`
-      );
+      const response = await fetch(`/api/books/serch?${params.toString()}`);
       if (!response.ok) {
         throw new Error("Failed to search");
       }
       const data = await response.json();
       setSearchResults(data.items ?? []);
+      setSearchHasMore(data.hasMore ?? false);
+      setIsFuzzySearch(data.isFuzzy ?? false);
+      setSearchPage(1);
       setHasSearched(true);
     } catch {
       setSearchError("書籍を検索できませんでした。再度お試しください。");
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleSearchLoadMore = async () => {
+    if (isLoadingMore || !searchHasMore) return;
+    const nextPage = searchPage + 1;
+    setIsLoadingMore(true);
+    try {
+      const params = new URLSearchParams({ query: searchQuery, page: String(nextPage) });
+      if (isFuzzySearch) params.set("fuzzy", "1");
+      if (filterAuthor.trim()) params.set("author", filterAuthor.trim());
+      if (filterPublisher.trim()) params.set("publisher", filterPublisher.trim());
+      const response = await fetch(`/api/books/serch?${params.toString()}`);
+      if (!response.ok) throw new Error("Failed to search");
+      const data = await response.json();
+      setSearchResults((prev) => [...prev, ...(data.items ?? [])]);
+      setSearchHasMore(data.hasMore ?? false);
+      setSearchPage(nextPage);
+    } catch {
+      setSearchError("追加読み込みに失敗しました。");
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -223,7 +262,20 @@ export default function LogComposer({ session }: LogComposerProps) {
               </button>
             </div>
           </label>
-
+          <div className="mt-2 flex gap-2">
+            <input
+              value={filterAuthor}
+              onChange={(e) => setFilterAuthor(e.target.value)}
+              placeholder="著者で絞り込み（任意）"
+              className="w-1/2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
+            />
+            <input
+              value={filterPublisher}
+              onChange={(e) => setFilterPublisher(e.target.value)}
+              placeholder="出版社で絞り込み（任意）"
+              className="w-1/2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
+            />
+          </div>
 
         </div>
 
@@ -240,51 +292,80 @@ export default function LogComposer({ session }: LogComposerProps) {
             </p>
           </div>
         ) : null}
+        {isFuzzySearch && searchResults.length > 0 ? (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            「{title}」に完全一致する結果が見つからなかったため、関連する書籍を表示しています。
+          </p>
+        ) : null}
         {searchResults.length > 0 ? (
           <div className="grid gap-3">
-            {searchResults.map((result) => (
-              <button
-                key={result.asin}
-                type="button"
-                onClick={() => {
-                  setTitle(result.title);
-                  setAuthor(result.author);
-                  setImageUrl(result.imageUrl);
-                  setAffiliateUrl(result.affiliateUrl || "");
-                  setSearchResults([result]);
-                  setSelectedAsin(result.asin);
-                }}
-                aria-pressed={selectedAsin === result.asin}
-                className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${selectedAsin === result.asin
-                  ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300 dark:border-blue-500 dark:bg-stone-700 dark:ring-blue-700"
-                  : "border-stone-200 bg-stone-50 hover:border-blue-300 hover:bg-blue-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:border-blue-700 dark:hover:bg-stone-700"
-                  }`}
-              >
-                {result.imageUrl ? (
-                  <img
-                    src={result.imageUrl}
-                    alt={result.title}
-                    className="h-14 w-10 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="h-14 w-10 rounded-lg bg-stone-200 dark:bg-stone-700 flex items-center justify-center">
-                    <span className="text-xs text-stone-400">📚</span>
-                  </div>
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{result.title}</p>
-                  <p className="text-xs text-stone-600 dark:text-stone-400">{result.author}</p>
-                </div>
-                <span
-                  className={`text-xs font-medium ${selectedAsin === result.asin
-                    ? "text-blue-700 dark:text-blue-300"
-                    : "text-blue-600 dark:text-blue-400"
+            <div className="max-h-80 overflow-y-auto overscroll-contain rounded-lg grid gap-3 pr-1">
+              {searchResults.map((result) => (
+                <button
+                  key={result.asin}
+                  type="button"
+                  onClick={() => {
+                    if (selectedAsin === result.asin) {
+                      // 再クリックで未選択に戻す（書籍名は残す）
+                      setSelectedAsin(null);
+                      setAuthor("");
+                      setImageUrl("");
+                      setAffiliateUrl("");
+                      setFilterAuthor("");
+                      setFilterPublisher("");
+                    } else {
+                      setTitle(result.title);
+                      setAuthor(result.author);
+                      setImageUrl(result.imageUrl);
+                      setAffiliateUrl(result.affiliateUrl || "");
+                      setSelectedAsin(result.asin);
+                    }
+                  }}
+                  aria-pressed={selectedAsin === result.asin}
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${selectedAsin === result.asin
+                    ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300 dark:border-blue-500 dark:bg-stone-700 dark:ring-blue-700"
+                    : "border-stone-200 bg-stone-50 hover:border-blue-300 hover:bg-blue-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:border-blue-700 dark:hover:bg-stone-700"
                     }`}
                 >
-                  {selectedAsin === result.asin ? "選択中" : "選択"}
-                </span>
+                  {result.imageUrl ? (
+                    <img
+                      src={result.imageUrl}
+                      alt={result.title}
+                      className="h-14 w-10 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="h-14 w-10 rounded-lg bg-stone-200 dark:bg-stone-700 flex items-center justify-center">
+                      <span className="text-xs text-stone-400">📚</span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{result.title}</p>
+                    <p className="text-xs text-stone-600 dark:text-stone-400">{result.author}</p>
+                    {result.publisher && (
+                      <p className="text-xs text-stone-400 dark:text-stone-500">{result.publisher}</p>
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs font-medium ${selectedAsin === result.asin
+                      ? "text-blue-700 dark:text-blue-300"
+                      : "text-blue-600 dark:text-blue-400"
+                      }`}
+                  >
+                    {selectedAsin === result.asin ? "選択中" : "選択"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {searchHasMore ? (
+              <button
+                type="button"
+                onClick={handleSearchLoadMore}
+                disabled={isLoadingMore}
+                className="w-full rounded-lg border border-stone-300 bg-white py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
+              >
+                {isLoadingMore ? "読み込み中..." : "次の20件を表示"}
               </button>
-            ))}
+            ) : null}
           </div>
         ) : null}
 
@@ -365,7 +446,7 @@ export default function LogComposer({ session }: LogComposerProps) {
 
         <button
           type="submit"
-          disabled={isPosting || !session}
+          disabled={isPosting || !session || (hasSearched && !selectedAsin)}
           className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPosting ? "投稿中..." : (<><BlueskyLink asLink={false} className="inline-flex items-center gap-1 text-white" />に投稿</>)}

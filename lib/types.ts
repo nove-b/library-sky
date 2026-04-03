@@ -7,6 +7,7 @@ export interface Book {
   price?: string;
   asin: string;
   affiliateUrl?: string;
+  publisher?: string;
 }
 
 export interface BookLog {
