@@ -99,9 +99,9 @@ function parseRakutenBooksResponse(data: RakutenBooksResponse, page: number, isF
 
     const title = item.title || "Unknown";
     const author = item.author || "Unknown";
-    const asin = item.isbn || `rakuten-books-${index}`;
+    const asin = item.isbn || item.itemUrl || item.affiliateUrl || `rakuten-books-${page}-${index}`;
     const affiliateUrl = item.affiliateUrl || item.itemUrl || "";
-    const publisher = item.publisherName || "";
+    const publisher = item.publisherName || undefined;
 
     const imageUrl = sanitizeImageUrl(
       item.largeImageUrl || item.mediumImageUrl || item.smallImageUrl || ""

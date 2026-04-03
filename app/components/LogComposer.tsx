@@ -37,6 +37,8 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [filterAuthor, setFilterAuthor] = useState("");
   const [filterPublisher, setFilterPublisher] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilterAuthor, setSearchFilterAuthor] = useState("");
+  const [searchFilterPublisher, setSearchFilterPublisher] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
@@ -86,10 +88,14 @@ export default function LogComposer({ session }: LogComposerProps) {
     setIsFuzzySearch(false);
 
     const q = title.trim();
+    const snapshotAuthor = filterAuthor.trim();
+    const snapshotPublisher = filterPublisher.trim();
     setSearchQuery(q);
+    setSearchFilterAuthor(snapshotAuthor);
+    setSearchFilterPublisher(snapshotPublisher);
     const params = new URLSearchParams({ query: q, page: "1" });
-    if (filterAuthor.trim()) params.set("author", filterAuthor.trim());
-    if (filterPublisher.trim()) params.set("publisher", filterPublisher.trim());
+    if (snapshotAuthor) params.set("author", snapshotAuthor);
+    if (snapshotPublisher) params.set("publisher", snapshotPublisher);
 
     try {
       const response = await fetch(`/api/books/serch?${params.toString()}`);
@@ -116,11 +122,12 @@ export default function LogComposer({ session }: LogComposerProps) {
     try {
       const params = new URLSearchParams({ query: searchQuery, page: String(nextPage) });
       if (isFuzzySearch) params.set("fuzzy", "1");
-      if (filterAuthor.trim()) params.set("author", filterAuthor.trim());
-      if (filterPublisher.trim()) params.set("publisher", filterPublisher.trim());
+      if (searchFilterAuthor) params.set("author", searchFilterAuthor);
+      if (searchFilterPublisher) params.set("publisher", searchFilterPublisher);
       const response = await fetch(`/api/books/serch?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to search");
       const data = await response.json();
+      setIsFuzzySearch((prev) => prev || !!data.isFuzzy);
       setSearchResults((prev) => [...prev, ...(data.items ?? [])]);
       setSearchHasMore(data.hasMore ?? false);
       setSearchPage(nextPage);
@@ -446,7 +453,7 @@ export default function LogComposer({ session }: LogComposerProps) {
 
         <button
           type="submit"
-          disabled={isPosting || !session || (hasSearched && !selectedAsin)}
+          disabled={isPosting || !session}
           className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPosting ? "投稿中..." : (<><BlueskyLink asLink={false} className="inline-flex items-center gap-1 text-white" />に投稿</>)}
