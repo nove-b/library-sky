@@ -14,6 +14,7 @@ interface UserProfile {
   displayName: string;
   avatarUrl: string;
   did: string;
+  latestPostAt: string;
 }
 
 export async function GET() {
@@ -27,22 +28,29 @@ export async function GET() {
 
     const feedItems = feedResponse.data.feed ?? [];
 
-    const seenDids = new Set<string>();
-    const users: UserProfile[] = [];
+    const userMap = new Map<string, UserProfile>();
 
     for (const item of feedItems) {
       const author = item.post?.author;
-      if (!author?.did || seenDids.has(author.did)) {
+      const indexedAt = item.post?.indexedAt;
+      if (!author?.did || !indexedAt) {
         continue;
       }
-      seenDids.add(author.did);
-      users.push({
-        did: author.did,
-        handle: author.handle,
-        displayName: author.displayName || author.handle,
-        avatarUrl: author.avatar || "",
-      });
+      const existing = userMap.get(author.did);
+      if (!existing || indexedAt > existing.latestPostAt) {
+        userMap.set(author.did, {
+          did: author.did,
+          handle: author.handle,
+          displayName: author.displayName || author.handle,
+          avatarUrl: author.avatar || "",
+          latestPostAt: indexedAt,
+        });
+      }
     }
+
+    const users = Array.from(userMap.values()).sort(
+      (a, b) => b.latestPostAt.localeCompare(a.latestPostAt)
+    );
 
     return NextResponse.json({ success: true, users });
   } catch (error) {
