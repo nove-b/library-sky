@@ -37,6 +37,11 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
     setMenuOpen(false);
   }, []);
 
+  const handleThemeClick = useCallback(() => {
+    setMenuOpen(false);
+    onToggleTheme();
+  }, [onToggleTheme]);
+
   const handleLogoutClick = useCallback(() => {
     setMenuOpen(false);
     onLogout();
@@ -56,7 +61,7 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
             <Link
               title={session.displayName}
               href={`/user/${session.handle}`}
-              className="flex h-12 w-12 items-center justify-center gap-2 rounded-full border border-stone-200 bg-stone-50 transition hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-stone-50 transition hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
             >
               <img
                 src={session.avatarUrl || "https://placehold.co/32x32/f5f5f4/000000?text=BS"}
@@ -65,14 +70,6 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
               />
             </Link>
           )}
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
-            aria-label="テーマを切り替える"
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
 
           {/* Hamburger menu */}
           <div className="relative" ref={menuRef}>
@@ -99,7 +96,7 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
             </button>
 
             {menuOpen && (
-              <div role="menu" className="absolute right-0 mt-2 w-44 rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
+              <div role="menu" className="absolute right-0 mt-2 w-48 rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
                 <Link
                   ref={firstMenuItemRef}
                   href="/about"
@@ -114,20 +111,32 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
                   </svg>
                   使い方
                 </Link>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleThemeClick}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
+                >
+                  <span aria-hidden="true">{theme === "dark" ? "☀️" : "🌙"}</span>
+                  {theme === "dark" ? "ライトモード" : "ダークモード"}
+                </button>
                 {session && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={handleLogoutClick}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                    ログアウト
-                  </button>
+                  <>
+                    <div className="my-1 border-t border-stone-100 dark:border-stone-800" role="separator" />
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={handleLogoutClick}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      ログアウト
+                    </button>
+                  </>
                 )}
               </div>
             )}
