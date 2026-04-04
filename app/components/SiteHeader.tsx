@@ -22,6 +22,12 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
           </div>
         </Link>
         <div className="flex items-center gap-3">
+          <Link
+            href="/about"
+            className="text-sm font-medium text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+          >
+            使い方
+          </Link>
           {session && (
             <Link
               title={session.displayName}
