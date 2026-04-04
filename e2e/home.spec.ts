@@ -122,6 +122,8 @@ test.describe("読書ログアプリ e2e", () => {
   test("検索が機能すること", async ({ page }) => {
     await mockSessionViaApi(page);
 
+    // Note: the route is intentionally "serch" – that is the spelling used in
+    // the actual API directory (app/api/books/serch).
     await page.route("/api/books/serch*", async (route) => {
       await route.fulfill({
         status: 200,
@@ -156,6 +158,8 @@ test.describe("読書ログアプリ e2e", () => {
   test("投稿がうまくいくこと", async ({ page }) => {
     await mockSessionViaApi(page);
 
+    // Note: the route is intentionally "serch" – that is the spelling used in
+    // the actual API directory (app/api/books/serch).
     await page.route("/api/books/serch*", async (route) => {
       await route.fulfill({
         status: 200,
