@@ -257,19 +257,19 @@ export async function POST(request: NextRequest) {
         | { $type: "app.bsky.richtext.facet#tag"; tag: string }
       >;
     }> = [
-      {
-        index: {
-          byteStart: beforeLinkBytes,
-          byteEnd: beforeLinkBytes + linkBytes,
-        },
-        features: [
-          {
-            $type: "app.bsky.richtext.facet#link",
-            uri: detailUrlWithUri,
+        {
+          index: {
+            byteStart: beforeLinkBytes,
+            byteEnd: beforeLinkBytes + linkBytes,
           },
-        ],
-      },
-    ];
+          features: [
+            {
+              $type: "app.bsky.richtext.facet#link",
+              uri: detailUrlWithUri,
+            },
+          ],
+        },
+      ];
 
     let tagSearchStart = 0;
     for (const tag of safeHashtags) {
