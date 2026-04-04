@@ -67,26 +67,26 @@ export default function AboutPage() {
         </h2>
         <ul className="space-y-3 text-sm text-stone-700 dark:text-stone-300">
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-md bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-              積読
+            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
+              読みたい
             </span>
             <span>読みたいと思っている本を記録しておきます。</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
               読書中
             </span>
             <span>現在読んでいる本を記録します。</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
               読了
             </span>
             <span>読み終わった本を記録します。</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:bg-stone-700 dark:text-stone-300">
-              積み崩し失敗
+            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
+              中断
             </span>
             <span>途中で読むのをやめた本を記録します。</span>
           </li>
