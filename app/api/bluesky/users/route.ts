@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 const APPVIEW_SERVICE =
   process.env.NEXT_PUBLIC_BSKY_APPVIEW_SERVICE || "https://public.api.bsky.app";
-const SEARCH_QUERY = "library-sky";
-const SEARCH_LIMIT = 100;
+const FEED_URI = "at://did:plc:2atly2y5kfyjcj5zap6pv4wd/app.bsky.feed.generator/aaaf7ciexzdpw";
+const FEED_LIMIT = 100;
 
 interface UserProfile {
   handle: string;
@@ -20,18 +20,18 @@ export async function GET() {
   try {
     const agent = createAgent(APPVIEW_SERVICE);
 
-    const searchResponse = await agent.app.bsky.feed.searchPosts({
-      q: SEARCH_QUERY,
-      limit: SEARCH_LIMIT,
+    const feedResponse = await agent.app.bsky.feed.getFeed({
+      feed: FEED_URI,
+      limit: FEED_LIMIT,
     });
 
-    const posts = searchResponse.data.posts ?? [];
+    const feedItems = feedResponse.data.feed ?? [];
 
     const seenDids = new Set<string>();
     const users: UserProfile[] = [];
 
-    for (const post of posts) {
-      const author = post.author;
+    for (const item of feedItems) {
+      const author = item.post?.author;
       if (!author?.did || seenDids.has(author.did)) {
         continue;
       }
