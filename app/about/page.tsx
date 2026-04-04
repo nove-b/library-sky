@@ -67,25 +67,25 @@ export default function AboutPage() {
         </h2>
         <ul className="space-y-3 text-sm text-stone-700 dark:text-stone-300">
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
+            <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
               読みたい
             </span>
             <span>読みたいと思っている本を記録しておきます。</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
+            <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
               読書中
             </span>
             <span>現在読んでいる本を記録します。</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
+            <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
               読了
             </span>
             <span>読み終わった本を記録します。</span>
           </li>
           <li className="flex items-start gap-3">
-            <span className="mt-0.5 rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
+            <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-full border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
               中断
             </span>
             <span>途中で読むのをやめた本を記録します。</span>
