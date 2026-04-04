@@ -20,6 +20,14 @@ const STATUS_LABELS: Record<ReadingStatus, string> = {
   dropped: "中断",
 };
 
+function normalizeHashtag(value: string) {
+  return value.trim().replace(/^#+/, "").replace(/\s+/g, "");
+}
+
+function getByteLength(value: string) {
+  return new TextEncoder().encode(value).length;
+}
+
 function decodeDidFromJwt(accessJwt: string) {
   const jwtParts = accessJwt.split(".");
   if (jwtParts.length !== 3) {
@@ -36,7 +44,7 @@ function decodeDidFromJwt(accessJwt: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accessJwt, refreshJwt, did, book, status, rating, comment, service, handle } =
+    const { accessJwt, refreshJwt, did, book, status, rating, comment, hashtags, service, handle } =
       body ?? {};
 
     let effectiveAccessJwt =
@@ -206,6 +214,15 @@ export async function POST(request: NextRequest) {
       safeComment = safeComment.substring(0, 100) + "...";
     }
     const ratingStars = "⭐".repeat(Math.max(0, Math.min(rating, 5)));
+    const safeHashtags = Array.isArray(hashtags)
+      ? hashtags
+        .filter((value: unknown): value is string => typeof value === "string")
+        .map(normalizeHashtag)
+        .filter(Boolean)
+        .filter((value, index, values) => values.findIndex(
+          (candidate) => candidate.toLocaleLowerCase() === value.toLocaleLowerCase()
+        ) === index)
+      : [];
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL || "http://127.0.0.1:3000";
 
@@ -219,6 +236,7 @@ export async function POST(request: NextRequest) {
       ratingStars ? `${ratingStars} ${rating}/5` : "",
       safeComment ? `💬 感想: ${safeComment}` : "",
       `🔗 library-sky`,
+      safeHashtags.length > 0 ? safeHashtags.map((tag) => `#${tag}`).join(" ") : "",
     ].filter(Boolean);
 
     const text = lines.join("\n");
@@ -228,25 +246,54 @@ export async function POST(request: NextRequest) {
     const linkStart = text.indexOf(linkText);
 
     // バイト位置を計算（UTF-8エンコーディング）
-    const encoder = new TextEncoder();
     const beforeLink = text.substring(0, linkStart);
-    const beforeLinkBytes = encoder.encode(beforeLink);
-    const linkBytes = encoder.encode(linkText);
+    const beforeLinkBytes = getByteLength(beforeLink);
+    const linkBytes = getByteLength(linkText);
 
-    const facets = [
-      {
+    const facets: Array<{
+      index: { byteStart: number; byteEnd: number };
+      features: Array<
+        | { $type: "app.bsky.richtext.facet#link"; uri: string }
+        | { $type: "app.bsky.richtext.facet#tag"; tag: string }
+      >;
+    }> = [
+        {
+          index: {
+            byteStart: beforeLinkBytes,
+            byteEnd: beforeLinkBytes + linkBytes,
+          },
+          features: [
+            {
+              $type: "app.bsky.richtext.facet#link",
+              uri: detailUrlWithUri,
+            },
+          ],
+        },
+      ];
+
+    let tagSearchStart = 0;
+    for (const tag of safeHashtags) {
+      const hashtagText = `#${tag}`;
+      const hashtagStart = text.indexOf(hashtagText, tagSearchStart);
+      if (hashtagStart === -1) {
+        continue;
+      }
+
+      facets.push({
         index: {
-          byteStart: beforeLinkBytes.length,
-          byteEnd: beforeLinkBytes.length + linkBytes.length,
+          byteStart: getByteLength(text.slice(0, hashtagStart)),
+          byteEnd: getByteLength(text.slice(0, hashtagStart + hashtagText.length)),
         },
         features: [
           {
-            $type: "app.bsky.richtext.facet#link",
-            uri: detailUrlWithUri,
+            $type: "app.bsky.richtext.facet#tag",
+            tag,
           },
         ],
-      },
-    ];
+      });
+
+      tagSearchStart = hashtagStart + hashtagText.length;
+    }
 
     // 既にアップロードされた画像blobを使用して埋め込みを作成
     const imageEmbed = imageBlob

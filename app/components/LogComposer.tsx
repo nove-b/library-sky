@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession, Book, ReadingStatus } from "@/lib/types";
@@ -14,6 +14,42 @@ const statusOptions: { value: ReadingStatus; label: string }[] = [
   { value: "dropped", label: "中断" },
 ];
 
+function normalizeHashtag(value: string) {
+  return value.trim().replace(/^#+/, "").replace(/\s+/g, "");
+}
+
+function mergeHashtags(current: string[], nextValues: string[]) {
+  const merged = [...current];
+
+  for (const value of nextValues) {
+    const normalized = normalizeHashtag(value);
+    if (!normalized) continue;
+
+    const exists = merged.some(
+      (tag) => tag.toLocaleLowerCase() === normalized.toLocaleLowerCase()
+    );
+    if (!exists) {
+      merged.push(normalized);
+    }
+  }
+
+  return merged;
+}
+
+function splitHashtagInput(value: string) {
+  if (!/\s/.test(value)) {
+    return { completed: [] as string[], remainder: value };
+  }
+
+  const endsWithWhitespace = /\s$/.test(value);
+  const parts = value.split(/\s+/).filter(Boolean);
+
+  return {
+    completed: endsWithWhitespace ? parts : parts.slice(0, -1),
+    remainder: endsWithWhitespace ? "" : (parts.at(-1) ?? ""),
+  };
+}
+
 interface LogComposerProps {
   session: BlueskySession | null;
 }
@@ -22,6 +58,8 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [status, setStatus] = useState<ReadingStatus>("reading");
   const [rating, setRating] = useState(4);
   const [comment, setComment] = useState("");
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [hashtagInput, setHashtagInput] = useState("");
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -44,6 +82,7 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [postedLogUrl, setPostedLogUrl] = useState<string | null>(null);
   const [selectedAsin, setSelectedAsin] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const commentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Load draft from localStorage on component mount
   useEffect(() => {
@@ -52,6 +91,7 @@ export default function LogComposer({ session }: LogComposerProps) {
       setTitle(draft.title);
       setAuthor(draft.author);
       setComment(draft.comment);
+      setHashtags(draft.hashtags ?? []);
       setStatus(draft.status);
       setRating(draft.rating);
       setImageUrl(draft.imageUrl);
@@ -65,13 +105,27 @@ export default function LogComposer({ session }: LogComposerProps) {
       title,
       author,
       comment,
+      hashtags,
       status,
       rating,
       imageUrl,
       affiliateUrl,
     };
     saveDraft(draft);
-  }, [title, author, comment, status, rating, imageUrl, affiliateUrl]);
+  }, [title, author, comment, hashtags, status, rating, imageUrl, affiliateUrl]);
+
+  useEffect(() => {
+    const textarea = commentTextareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(textarea.scrollHeight, 88)}px`;
+  }, [comment]);
+
+  const commitHashtags = (values: string[]) => {
+    if (values.length === 0) return;
+    setHashtags((current) => mergeHashtags(current, values));
+  };
 
   const handleSearch = async () => {
     if (!title.trim()) {
@@ -147,6 +201,9 @@ export default function LogComposer({ session }: LogComposerProps) {
       return;
     }
 
+    const pendingHashtags = hashtagInput ? [hashtagInput] : [];
+    const postHashtags = mergeHashtags(hashtags, pendingHashtags);
+
     const postTitle = selectedBook?.title ?? title.trim();
     const postAuthor = selectedBook?.author ?? author.trim();
     const postImageUrl = selectedBook?.imageUrl ?? imageUrl.trim();
@@ -181,6 +238,7 @@ export default function LogComposer({ session }: LogComposerProps) {
           status,
           rating,
           comment,
+          hashtags: postHashtags,
           service: session.service,
         }),
       });
@@ -188,7 +246,16 @@ export default function LogComposer({ session }: LogComposerProps) {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           // Save draft before session expires so user can recover it after re-login
-          saveDraft({ title, author, comment, status, rating, imageUrl, affiliateUrl });
+          saveDraft({
+            title,
+            author,
+            comment,
+            hashtags: postHashtags,
+            status,
+            rating,
+            imageUrl,
+            affiliateUrl,
+          });
           window.dispatchEvent(new Event("library-sky-session-expired"));
           return;
         }
@@ -222,6 +289,8 @@ export default function LogComposer({ session }: LogComposerProps) {
       // Clear draft after successful submission
       clearDraft();
       setComment("");
+      setHashtags([]);
+      setHashtagInput("");
       setNotice("Blueskyに投稿しました。");
     } catch (error) {
       setPostedLogUrl(null);
@@ -464,13 +533,72 @@ export default function LogComposer({ session }: LogComposerProps) {
           <label className="space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
             コメント
             <textarea
+              ref={commentTextareaRef}
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="感想をひとこと"
               rows={3}
+              className="w-full resize-none overflow-hidden rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
+            />
+          </label>
+        </div>
+
+        <div className="mb-3">
+          <label className="space-y-2 text-xs font-medium text-stone-900 dark:text-stone-200">
+            ハッシュタグ
+            <input
+              value={hashtagInput}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                const { completed, remainder } = splitHashtagInput(nextValue);
+                if (completed.length > 0) {
+                  commitHashtags(completed);
+                }
+                setHashtagInput(remainder);
+              }}
+              onBlur={() => {
+                if (!hashtagInput.trim()) return;
+                commitHashtags([hashtagInput]);
+                setHashtagInput("");
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  if (!hashtagInput.trim()) return;
+                  commitHashtags([hashtagInput]);
+                  setHashtagInput("");
+                  return;
+                }
+
+                if (event.key === "Backspace" && !hashtagInput && hashtags.length > 0) {
+                  setHashtags((current) => current.slice(0, -1));
+                }
+              }}
+              enterKeyHint="done"
+              placeholder="例: 講談社学術文庫 読書記録"
               className="w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
           </label>
+          <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">
+            スペースで確定され、投稿時に Bluesky のハッシュタグとして付きます。
+          </p>
+          {hashtags.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {hashtags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    setHashtags((current) => current.filter((currentTag) => currentTag !== tag));
+                  }}
+                  className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                  aria-label={`#${tag} を削除`}
+                >
+                  #{tag} ×
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         {notice && (

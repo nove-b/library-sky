@@ -4,6 +4,7 @@ export interface PostDraft {
   title: string;
   author: string;
   comment: string;
+  hashtags: string[];
   status: ReadingStatus;
   rating: number;
   imageUrl: string;
