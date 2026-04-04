@@ -6,6 +6,8 @@ export const dynamic = "force-dynamic";
 
 const APPVIEW_SERVICE =
   process.env.NEXT_PUBLIC_BSKY_APPVIEW_SERVICE || "https://public.api.bsky.app";
+const SEARCH_QUERY = "library-sky";
+const SEARCH_LIMIT = 100;
 
 interface UserProfile {
   handle: string;
@@ -19,8 +21,8 @@ export async function GET() {
     const agent = createAgent(APPVIEW_SERVICE);
 
     const searchResponse = await agent.app.bsky.feed.searchPosts({
-      q: "library-sky",
-      limit: 100,
+      q: SEARCH_QUERY,
+      limit: SEARCH_LIMIT,
     });
 
     const posts = searchResponse.data.posts ?? [];

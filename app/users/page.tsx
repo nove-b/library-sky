@@ -79,7 +79,7 @@ export default function UsersPage() {
             >
               <img
                 src={user.avatarUrl || "https://placehold.co/64x64/f5f5f4/000000?text=BS"}
-                alt={user.displayName}
+                alt={`${user.displayName}のプロフィール画像`}
                 className="h-14 w-14 rounded-full object-cover"
               />
               <div className="w-full">
