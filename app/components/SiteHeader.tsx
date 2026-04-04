@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import BlueskyLink from "./BlueskyLink";
 import type { BlueskySession } from "@/lib/types";
@@ -15,6 +15,7 @@ interface SiteHeaderProps {
 export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const firstMenuItemRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -25,6 +26,21 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (menuOpen) {
+      firstMenuItemRef.current?.focus();
+    }
+  }, [menuOpen]);
+
+  const handleMenuItemClick = useCallback(() => {
+    setMenuOpen(false);
+  }, []);
+
+  const handleLogoutClick = useCallback(() => {
+    setMenuOpen(false);
+    onLogout();
+  }, [onLogout]);
 
   return (
     <header className="fixed top-0 z-50 w-full border-b border-stone-200 bg-white/80 backdrop-blur-md dark:border-stone-800 dark:bg-stone-900/80">
@@ -66,6 +82,7 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
               aria-label="メニューを開く"
               aria-expanded={menuOpen}
+              aria-haspopup="menu"
             >
               {menuOpen ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
@@ -82,10 +99,12 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-44 rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
+              <div role="menu" className="absolute right-0 mt-2 w-44 rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
                 <Link
+                  ref={firstMenuItemRef}
                   href="/about"
-                  onClick={() => setMenuOpen(false)}
+                  role="menuitem"
+                  onClick={handleMenuItemClick}
                   className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
@@ -98,7 +117,8 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
                 {session && (
                   <button
                     type="button"
-                    onClick={() => { setMenuOpen(false); onLogout(); }}
+                    role="menuitem"
+                    onClick={handleLogoutClick}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
