@@ -21,31 +21,44 @@ export async function GET() {
   try {
     const agent = createAgent(APPVIEW_SERVICE);
 
-    const feedResponse = await agent.app.bsky.feed.getFeed({
-      feed: FEED_URI,
-      limit: FEED_LIMIT,
-    });
-
-    const feedItems = feedResponse.data.feed ?? [];
-
     const userMap = new Map<string, UserProfile>();
+    const seenCursors = new Set<string>();
+    let cursor: string | undefined;
 
-    for (const item of feedItems) {
-      const author = item.post?.author;
-      const indexedAt = item.post?.indexedAt;
-      if (!author?.did || !indexedAt) {
-        continue;
+    while (true) {
+      const feedResponse = await agent.app.bsky.feed.getFeed({
+        feed: FEED_URI,
+        limit: FEED_LIMIT,
+        cursor,
+      });
+
+      const feedItems = feedResponse.data.feed ?? [];
+
+      for (const item of feedItems) {
+        const author = item.post?.author;
+        const indexedAt = item.post?.indexedAt;
+        if (!author?.did || !indexedAt) {
+          continue;
+        }
+        const existing = userMap.get(author.did);
+        if (!existing || indexedAt > existing.latestPostAt) {
+          userMap.set(author.did, {
+            did: author.did,
+            handle: author.handle,
+            displayName: author.displayName || author.handle,
+            avatarUrl: author.avatar || "",
+            latestPostAt: indexedAt,
+          });
+        }
       }
-      const existing = userMap.get(author.did);
-      if (!existing || indexedAt > existing.latestPostAt) {
-        userMap.set(author.did, {
-          did: author.did,
-          handle: author.handle,
-          displayName: author.displayName || author.handle,
-          avatarUrl: author.avatar || "",
-          latestPostAt: indexedAt,
-        });
+
+      const nextCursor = feedResponse.data.cursor;
+      if (!nextCursor || seenCursors.has(nextCursor)) {
+        break;
       }
+
+      seenCursors.add(nextCursor);
+      cursor = nextCursor;
     }
 
     const users = Array.from(userMap.values()).sort(
