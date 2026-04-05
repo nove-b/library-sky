@@ -74,6 +74,8 @@ export default function LogComposer({ session }: LogComposerProps) {
   const [isFuzzySearch, setIsFuzzySearch] = useState(false);
   const [filterAuthor, setFilterAuthor] = useState("");
   const [filterPublisher, setFilterPublisher] = useState("");
+  const [filterAuthorInput, setFilterAuthorInput] = useState("");
+  const [filterPublisherInput, setFilterPublisherInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFilterAuthor, setSearchFilterAuthor] = useState("");
   const [searchFilterPublisher, setSearchFilterPublisher] = useState("");
@@ -96,6 +98,8 @@ export default function LogComposer({ session }: LogComposerProps) {
       setRating(draft.rating);
       setImageUrl(draft.imageUrl);
       setAffiliateUrl(draft.affiliateUrl ?? "");
+      setSelectedBook(draft.selectedBook ?? null);
+      setSelectedAsin(draft.selectedBook?.asin ?? null);
     }
   }, []);
 
@@ -110,9 +114,10 @@ export default function LogComposer({ session }: LogComposerProps) {
       rating,
       imageUrl,
       affiliateUrl,
+      selectedBook,
     };
     saveDraft(draft);
-  }, [title, author, comment, hashtags, status, rating, imageUrl, affiliateUrl]);
+  }, [title, author, comment, hashtags, status, rating, imageUrl, affiliateUrl, selectedBook]);
 
   useEffect(() => {
     const textarea = commentTextareaRef.current;
@@ -125,6 +130,38 @@ export default function LogComposer({ session }: LogComposerProps) {
   const commitHashtags = (values: string[]) => {
     if (values.length === 0) return;
     setHashtags((current) => mergeHashtags(current, values));
+  };
+
+  const commitFilterAuthor = (rawValue = filterAuthorInput) => {
+    const nextValue = rawValue.trim();
+    setFilterAuthorInput(nextValue);
+    setFilterAuthor(nextValue);
+    return nextValue;
+  };
+
+  const commitFilterPublisher = (rawValue = filterPublisherInput) => {
+    const nextValue = rawValue.trim();
+    setFilterPublisherInput(nextValue);
+    setFilterPublisher(nextValue);
+    return nextValue;
+  };
+
+  const handleFilterAuthorBlur = async () => {
+    const previousAuthor = filterAuthor;
+    const nextAuthor = commitFilterAuthor();
+    if (isSearching || !hasSearched || !title.trim() || previousAuthor === nextAuthor) {
+      return;
+    }
+    await handleSearch();
+  };
+
+  const handleFilterPublisherBlur = async () => {
+    const previousPublisher = filterPublisher;
+    const nextPublisher = commitFilterPublisher();
+    if (isSearching || !hasSearched || !title.trim() || previousPublisher === nextPublisher) {
+      return;
+    }
+    await handleSearch();
   };
 
   const handleSearch = async () => {
@@ -144,8 +181,8 @@ export default function LogComposer({ session }: LogComposerProps) {
     setIsFuzzySearch(false);
 
     const q = title.trim();
-    const snapshotAuthor = filterAuthor.trim();
-    const snapshotPublisher = filterPublisher.trim();
+    const snapshotAuthor = commitFilterAuthor();
+    const snapshotPublisher = commitFilterPublisher();
     setSearchQuery(q);
     setSearchFilterAuthor(snapshotAuthor);
     setSearchFilterPublisher(snapshotPublisher);
@@ -255,6 +292,7 @@ export default function LogComposer({ session }: LogComposerProps) {
             rating,
             imageUrl,
             affiliateUrl,
+            selectedBook,
           });
           window.dispatchEvent(new Event("library-sky-session-expired"));
           return;
@@ -348,14 +386,20 @@ export default function LogComposer({ session }: LogComposerProps) {
           </label>
           <div className="mt-2 flex gap-2">
             <input
-              value={filterAuthor}
-              onChange={(e) => setFilterAuthor(e.target.value)}
+              value={filterAuthorInput}
+              onChange={(e) => setFilterAuthorInput(e.target.value)}
+              onBlur={() => {
+                void handleFilterAuthorBlur();
+              }}
               placeholder="著者で絞り込み（任意）"
               className="w-1/2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
             <input
-              value={filterPublisher}
-              onChange={(e) => setFilterPublisher(e.target.value)}
+              value={filterPublisherInput}
+              onChange={(e) => setFilterPublisherInput(e.target.value)}
+              onBlur={() => {
+                void handleFilterPublisherBlur();
+              }}
               placeholder="出版社で絞り込み（任意）"
               className="w-1/2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
@@ -396,6 +440,8 @@ export default function LogComposer({ session }: LogComposerProps) {
                       setAuthor("");
                       setImageUrl("");
                       setAffiliateUrl("");
+                      setFilterAuthorInput("");
+                      setFilterPublisherInput("");
                       setFilterAuthor("");
                       setFilterPublisher("");
                     } else {
