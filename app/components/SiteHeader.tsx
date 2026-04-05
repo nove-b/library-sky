@@ -99,6 +99,20 @@ export default function SiteHeader({ session, onLogout, theme, onToggleTheme }: 
               <div role="menu" className="absolute right-0 mt-2 w-48 rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
                 <Link
                   ref={firstMenuItemRef}
+                  href="/users"
+                  role="menuitem"
+                  onClick={handleMenuItemClick}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  ユーザー一覧
+                </Link>
+                <Link
                   href="/about"
                   role="menuitem"
                   onClick={handleMenuItemClick}
