@@ -1,4 +1,4 @@
-import type { ReadingStatus } from "./types";
+import type { Book, ReadingStatus } from "./types";
 
 export interface PostDraft {
   title: string;
@@ -9,6 +9,7 @@ export interface PostDraft {
   rating: number;
   imageUrl: string;
   affiliateUrl: string;
+  selectedBook?: Book | null;
 }
 
 const DRAFT_STORAGE_KEY = "library-sky-draft";
