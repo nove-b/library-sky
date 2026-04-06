@@ -140,6 +140,7 @@ export default function BlueskySessionPanel({
       <button
         onClick={handleOAuthLogin}
         disabled={isLoading}
+        data-testid="oauth-login-button"
         className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isLoading ? "接続中..." : "Blueskyでログイン"}

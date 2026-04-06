@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "library-sky-session",
+          "value": "{\"handle\":\"testuser.bsky.social\",\"displayName\":\"Test User\",\"avatarUrl\":\"\",\"did\":\"did:plc:testdid123\",\"accessJwt\":\"oauth:did:plc:testdid123\",\"refreshJwt\":\"oauth:did:plc:testdid123\",\"service\":\"https://bsky.social\"}"
+        }
+      ]
+    }
+  ]
+}
