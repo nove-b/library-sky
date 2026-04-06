@@ -334,6 +334,7 @@ export default function LogComposer({ session }: LogComposerProps) {
                   setAffiliateUrl("");
                 }}
                 placeholder="タイトルを入力"
+                data-testid="book-search-input"
                 className="mt-1 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
               />
               <button
@@ -407,6 +408,7 @@ export default function LogComposer({ session }: LogComposerProps) {
                     }
                   }}
                   aria-pressed={selectedAsin === result.asin}
+                  data-testid={`search-result-${result.asin}`}
                   className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${selectedAsin === result.asin
                     ? "border-blue-500 bg-blue-50 ring-1 ring-blue-300 dark:border-blue-500 dark:bg-stone-700 dark:ring-blue-700"
                     : "border-stone-200 bg-stone-50 hover:border-blue-300 hover:bg-blue-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:border-blue-700 dark:hover:bg-stone-700"
@@ -537,6 +539,7 @@ export default function LogComposer({ session }: LogComposerProps) {
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="感想をひとこと"
+              data-testid="comment-input"
               rows={3}
               className="w-full resize-none overflow-hidden rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-500 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
             />
@@ -618,6 +621,7 @@ export default function LogComposer({ session }: LogComposerProps) {
         <button
           type="submit"
           disabled={isPosting || !session || !selectedBook}
+          data-testid="post-submit"
           className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPosting ? "投稿中..." : (<><BlueskyLink asLink={false} className="inline-flex items-center gap-1 text-white" />に投稿</>)}
